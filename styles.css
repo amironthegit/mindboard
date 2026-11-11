@@ -1,0 +1,454 @@
+/* ===== RTL Mindmap =====
+   شخصی‌سازی: یک CSS snippet بسازید و متغیرها را روی .mm-container بنویسید. مثال:
+
+   .mm-container {
+     --mm-color-mode: level;      // branch | level | sibling
+     --mm-shape: pill;            // rounded | rect | pill | circle | diamond | none
+     --mm-line-style: elbow;      // curve | straight | elbow
+     --mm-bracket-style: square;  // curly | square | line
+     --mm-arrow-style: equal;     // thin | equal | implies | bar | sleek | dart | bold
+     --mm-c0: #2f80ed;  --mm-c1: #f2994a;  ...  --mm-c7
+     --mm-group-color: #888;      // رنگ آکولاد گروهی مایندمپ
+     --mm-gap-x: 4em;
+   }
+*/
+
+.mm-container {
+  /* پالت (به ترتیب؛ بعد از ۸ تا تکرار می‌شود) */
+  --mm-c0: var(--color-blue);
+  --mm-c1: var(--color-orange);
+  --mm-c2: var(--color-green);
+  --mm-c3: var(--color-purple);
+  --mm-c4: var(--color-red);
+  --mm-c5: var(--color-cyan);
+  --mm-c6: var(--color-yellow);
+  --mm-c7: var(--color-pink);
+  --mm-root: var(--interactive-accent);
+
+  --mm-gap-x: 3.2em;           /* فاصله‌ی بین سطح‌ها (در جهت اصلی نمودار) */
+  --mm-gap-y: 0.7em;           /* فاصله‌ی بین هم‌سطح‌ها (در جهت افقی) */
+  --mm-gap-sib: 1.2em;         /* فاصله‌ی بین هم‌سطح‌ها (در جهت‌های بالا/پایین) */
+  --mm-root-max-width: 16em;   /* <-- حداکثر عرض گره اصلی / ریشه مایندمپ (مقدار دلخواه) */
+  --mm-node-max-width: 36em;   /* حداکثر عرض کادرهای مایندمپ */
+  --mm-block-max-width: 34em;  /* حداکثر عرض خطوط در بلاک کروشه */
+  --mm-text-align: center;     /* تراز متن: center | right | left | justify */
+  --mm-font-size: calc(var(--font-text-size, 16px) * 0.95);
+  --mm-fill: 14%;              /* غلظت رنگ داخل کادر */
+
+  /* همان فونت متن پیش‌فرضی که در تنظیمات Obsidian انتخاب شده */
+  font-family: var(--font-text);
+  font-size: var(--mm-font-size);
+  margin: 0.5em 0;
+}
+
+/* ----- رنگ‌بندی -----
+   branch : هر شاخه‌ی اصلی یک رنگ (.mm-bN)
+   level  : همه‌ی گره‌های یک سطح هم‌رنگ (.mm-dN)
+   sibling: اولی رنگ ۱، دومی رنگ ۲، ... در هر سطح (.mm-sN) */
+.mm-container[data-color="branch"] .mm-b0 { --mm-color: var(--mm-c0); }
+.mm-container[data-color="branch"] .mm-b1 { --mm-color: var(--mm-c1); }
+.mm-container[data-color="branch"] .mm-b2 { --mm-color: var(--mm-c2); }
+.mm-container[data-color="branch"] .mm-b3 { --mm-color: var(--mm-c3); }
+.mm-container[data-color="branch"] .mm-b4 { --mm-color: var(--mm-c4); }
+.mm-container[data-color="branch"] .mm-b5 { --mm-color: var(--mm-c5); }
+.mm-container[data-color="branch"] .mm-b6 { --mm-color: var(--mm-c6); }
+.mm-container[data-color="branch"] .mm-b7 { --mm-color: var(--mm-c7); }
+.mm-container[data-color="level"] .mm-d0 { --mm-color: var(--mm-c0); }
+.mm-container[data-color="level"] .mm-d1 { --mm-color: var(--mm-c1); }
+.mm-container[data-color="level"] .mm-d2 { --mm-color: var(--mm-c2); }
+.mm-container[data-color="level"] .mm-d3 { --mm-color: var(--mm-c3); }
+.mm-container[data-color="level"] .mm-d4 { --mm-color: var(--mm-c4); }
+.mm-container[data-color="level"] .mm-d5 { --mm-color: var(--mm-c5); }
+.mm-container[data-color="level"] .mm-d6 { --mm-color: var(--mm-c6); }
+.mm-container[data-color="level"] .mm-d7 { --mm-color: var(--mm-c7); }
+.mm-container[data-color="sibling"] .mm-s0 { --mm-color: var(--mm-c0); }
+.mm-container[data-color="sibling"] .mm-s1 { --mm-color: var(--mm-c1); }
+.mm-container[data-color="sibling"] .mm-s2 { --mm-color: var(--mm-c2); }
+.mm-container[data-color="sibling"] .mm-s3 { --mm-color: var(--mm-c3); }
+.mm-container[data-color="sibling"] .mm-s4 { --mm-color: var(--mm-c4); }
+.mm-container[data-color="sibling"] .mm-s5 { --mm-color: var(--mm-c5); }
+.mm-container[data-color="sibling"] .mm-s6 { --mm-color: var(--mm-c6); }
+.mm-container[data-color="sibling"] .mm-s7 { --mm-color: var(--mm-c7); }
+/* بلاک کروشه: هر زنجیره یک رنگ */
+.mm-bracket-container .mm-b0 { --mm-color: var(--mm-c0); }
+.mm-bracket-container .mm-b1 { --mm-color: var(--mm-c1); }
+.mm-bracket-container .mm-b2 { --mm-color: var(--mm-c2); }
+.mm-bracket-container .mm-b3 { --mm-color: var(--mm-c3); }
+.mm-bracket-container .mm-b4 { --mm-color: var(--mm-c4); }
+.mm-bracket-container .mm-b5 { --mm-color: var(--mm-c5); }
+.mm-bracket-container .mm-b6 { --mm-color: var(--mm-c6); }
+.mm-bracket-container .mm-b7 { --mm-color: var(--mm-c7); }
+
+.mm-empty { color: var(--text-faint); padding: 0.5em; }
+
+/* ----- حالت ویرایش بلاک: راست‌چین و با فونت متن Obsidian (نه مونواسپیس) ----- */
+.cm-line.mm-edit-line { direction: rtl; text-align: right; }
+.cm-line.mm-edit-line,
+.cm-line.mm-edit-line span {
+  font-family: var(--font-text) !important;
+  font-size: var(--font-text-size) !important;
+}
+
+/* ----- فیت شدن با عرض صفحه: JS در صورت نیاز scale می‌دهد ----- */
+.mm-scroll {
+  overflow: hidden;
+  box-sizing: content-box;
+  padding: 1em 0.2em;
+}
+.mm-container[dir="rtl"] .mm-tree,
+.mm-container[dir="rtl"] .mm-groups { transform-origin: top right; }
+.mm-container[dir="ltr"] .mm-tree,
+.mm-container[dir="ltr"] .mm-groups { transform-origin: top left; }
+
+/* ----- چیدمان مایندمپ (افقی) ----- */
+.mm-tree { position: relative; display: inline-block; min-width: max-content; }
+.mm-forest { display: flex; flex-direction: column; gap: 1.6em; }
+.mm-branch { display: flex; flex-direction: row; align-items: center; }
+.mm-children {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mm-gap-y);
+  margin-inline-start: var(--mm-gap-x);
+}
+
+/* ----- جهت بالا به پایین / پایین به بالا ----- */
+.mm-container[data-orient="ttb"] .mm-branch { flex-direction: column; align-items: center; }
+.mm-container[data-orient="btt"] .mm-branch { flex-direction: column-reverse; align-items: center; }
+.mm-container[data-orient="ttb"] .mm-children,
+.mm-container[data-orient="btt"] .mm-children {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--mm-gap-sib);
+  margin-inline-start: 0;
+}
+.mm-container[data-orient="ttb"] .mm-children { margin-top: var(--mm-gap-x); }
+.mm-container[data-orient="btt"] .mm-children { margin-bottom: var(--mm-gap-x); }
+
+.mm-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+.mm-line {
+  fill: none;
+  stroke: var(--mm-color, var(--mm-root));
+  stroke-width: 2px;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+.mm-line.mm-l1 { stroke-width: 3.5px; }
+.mm-line.mm-l2 { stroke-width: 2.5px; }
+
+/* ----- گره، عنوان و توضیح ----- */
+.mm-node-wrap {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: var(--mm-node-max-width);
+}
+.mm-container[data-orient="ttb"] .mm-node-wrap,
+.mm-container[data-orient="btt"] .mm-node-wrap { align-items: center; }
+.mm-head { display: flex; flex-direction: row; align-items: center; gap: 0.5em; }
+.mm-node {
+  width: fit-content;
+  padding: 0.35em 0.9em;
+  line-height: 1.55;
+  text-align: var(--mm-text-align, center);
+  color: var(--text-normal);
+  border: 2px solid var(--mm-color, var(--mm-root));
+  background: color-mix(in srgb, var(--mm-color, var(--mm-root)) var(--mm-fill), var(--background-primary));
+}
+.mm-node p, .mm-title p, .mm-concl-line p {
+  margin: 0;
+  text-align: var(--mm-text-align, center);
+}
+.mm-level-1 > .mm-node-wrap > .mm-head > .mm-node { font-weight: 600; }
+
+/* عنوان (بین دو ##): کمی بزرگ‌تر و بولد، با فلش */
+.mm-title {
+  max-width: 18em;
+  font-size: 1.1em;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: var(--mm-text-align, center);
+  color: var(--mm-color, var(--mm-root));
+}
+.mm-arrow { display: inline-flex; flex: none; color: var(--mm-color, var(--mm-root)); }
+.mm-arrow svg {
+  width: 2.1em;
+  height: 0.85em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mm-arrow .fill { fill: currentColor; }
+.mm-container[dir="ltr"] .mm-arrow { transform: scaleX(-1); }
+
+/* توضیح کمرنگ زیر گره */
+.mm-note {
+  margin-top: 0.25em;
+  padding-inline: 0.5em;
+  font-size: 0.8em;
+  line-height: 1.45;
+  text-align: var(--mm-text-align, center);
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+.mm-note p {
+  margin: 0;
+  text-align: var(--mm-text-align, center);
+}
+
+/* ----- آکولاد گروهی مایندمپ (نشانه‌ی @@) -----
+   آکولاد و نتیجه بیرون از جریان صفحه‌اند و JS آن‌ها را کنار مجموعه‌ی اقسام می‌گذارد. */
+.mm-gpath {
+  fill: none;
+  stroke: var(--mm-group-color, var(--text-muted));
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mm-leader {
+  fill: none;
+  stroke: var(--mm-group-color, var(--text-muted));
+  stroke-width: 1.4px;
+  stroke-dasharray: 2 5;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+.mm-result {
+  --mm-color: var(--mm-group-color, var(--text-muted));
+  position: absolute;
+  z-index: 1;
+  visibility: hidden;
+  width: max-content;
+  max-width: var(--mm-node-max-width);
+  font-weight: 600;
+  text-align: var(--mm-text-align, center);
+}
+
+/* ----- بلاک کروشه / نتیجه‌گیری (چیدمان را JS با موقعیت مطلق انجام می‌دهد) ----- */
+.mm-groups {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.4em;
+  width: max-content;
+}
+.mm-bcanvas { position: relative; flex: none; }
+.mm-bsvg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.mm-container[dir="rtl"] .mm-bsvg { transform: scaleX(-1); }
+.mm-bpath {
+  fill: none;
+  stroke: var(--mm-color, var(--mm-root));
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.mm-concl-empty { color: var(--text-faint); font-weight: 400; }
+
+/* ----- شکل‌ها (data-shape روی .mm-container) ----- */
+.mm-container[data-shape="rounded"] .mm-node { border-radius: 10px; }
+.mm-container[data-shape="rect"] .mm-node { border-radius: 2px; }
+.mm-container[data-shape="pill"] .mm-node { border-radius: 999px; padding-inline: 1.15em; }
+.mm-container[data-shape="circle"] .mm-node { border-radius: 50%; padding: 0.8em 1.5em; text-align: var(--mm-text-align, center); }
+.mm-container[data-shape="diamond"] .mm-node {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  border: none;
+  padding: 1.1em 2.4em;
+  text-align: var(--mm-text-align, center);
+  background: color-mix(in srgb, var(--mm-color, var(--mm-root)) 32%, var(--background-primary));
+}
+.mm-container[data-shape="none"] .mm-node {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* آیتم‌های بلاک کروشه: بعد از .mm-node تا width/position آن را بازنویسی کند */
+.mm-bitem {
+  position: absolute;
+  width: max-content;
+  max-width: var(--mm-block-max-width);
+  text-align: var(--mm-text-align, center);
+}
+.mm-concl-line {
+  text-align: var(--mm-text-align, center);
+}
+.mm-bleaf { line-height: 1.7; }
+.mm-bmid { font-weight: 600; line-height: 1.6; }
+.mm-conclusion { font-weight: 600; }
+
+/* ----- ریشه (بعد از شکل‌ها تا اولویت داشته باشد) ----- */
+.mm-level-0 { --mm-color: var(--mm-root); }
+.mm-container .mm-level-0 > .mm-node-wrap > .mm-head > .mm-node {
+  font-weight: 700;
+  font-size: 1.15em;
+  color: var(--text-on-accent);
+  background: var(--mm-root);
+  border-color: var(--mm-root);
+}
+.mm-container .mm-level-0 > .mm-node-wrap {
+  max-width: var(--mm-root-max-width);
+}
+.mm-container[data-shape="none"] .mm-level-0 > .mm-node-wrap > .mm-head > .mm-node {
+  color: var(--text-normal);
+  background: transparent;
+  border-color: transparent;
+}
+.mm-container[data-shape="diamond"] .mm-level-0 > .mm-node-wrap > .mm-head > .mm-node { border: none; }
+
+/* ===== ابزارها: خروجی + روشن/خاموش کردن توضیحات + تنظیمات بلاک ===== */
+.mm-container { position: relative; }
+.mm-tools {
+  position: absolute;
+  top: 2px;
+  left: var(--mm-tools-offset, 44px);  /* فاصله از لبه‌ی چپ، تا با دکمه‌ی «edit this block» Obsidian برخورد نکند */
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+.mm-container:hover .mm-tools,
+.mm-tools:focus-within { opacity: 1; }
+.mm-tool.is-active { color: var(--interactive-accent); }
+.mm-tool.is-custom {
+  color: var(--interactive-accent);
+  position: relative;
+}
+.mm-tool.is-custom::after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+}
+.mm-tool-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--background-modifier-border);
+  margin: 0 4px;
+}
+.mm-tool svg { width: 1.1em; height: 1.1em; }
+
+/* خاموش بودن توضیحات: هم در نمودار و هم در خروجی اعمال می‌شود */
+.mm-container[data-notes="off"] .mm-note { display: none; }
+
+/* ===== پاپ‌آپ کوچک اسلایدرهای اختصاصی بلاک ===== */
+.mm-slider-popover {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  min-width: 250px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-s);
+  direction: rtl;
+  font-family: var(--font-text);
+  font-size: 0.88em;
+}
+.mm-pop-title {
+  font-weight: 700;
+  color: var(--text-normal);
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+}
+.mm-pop-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mm-pop-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.mm-pop-item-label {
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+.mm-pop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mm-pop-slider {
+  flex: 1;
+  accent-color: var(--interactive-accent);
+  cursor: pointer;
+}
+.mm-pop-val {
+  font-weight: 600;
+  color: var(--interactive-accent);
+  direction: ltr;
+  font-size: 0.9em;
+}
+.mm-pop-val.is-default {
+  color: var(--text-faint);
+  font-weight: normal;
+  direction: rtl;
+}
+.mm-pop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+  border-top: 1px solid var(--background-modifier-border);
+  padding-top: 8px;
+}
+.mm-pop-btn {
+  padding: 3px 10px;
+  font-size: 0.85em;
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--background-modifier-form-field);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+}
+.mm-pop-btn-reset {
+  padding: 2px 6px;
+  font-size: 0.78em;
+  white-space: nowrap;
+}
+.mm-pop-btn.mod-cta {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+/* ===== بلاک کروشه: عنوان و توضیح، خط راهنما ===== */
+.mm-bhead { display: flex; flex-direction: row; align-items: center; gap: 0.5em; }
+.mm-bleader {
+  fill: none;
+  stroke: var(--mm-color, var(--mm-root));
+  stroke-width: 1.4px;
+  stroke-dasharray: 2 5;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+.mm-bitem .mm-note { padding-inline: 0; margin-top: 0.1em; }
