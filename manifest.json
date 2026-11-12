@@ -1,7 +1,7 @@
 {
   "id": "mindboard",
   "name": "MindBoard",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "minAppVersion": "1.4.5",
   "description": "Quickly create RTL mindmaps, multi-level bracket conclusions, subtle descriptions, arrow titles, group braces, and customizable CSS styling.",
   "author": "Mohammad Amir Nazarpour",

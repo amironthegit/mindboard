@@ -81,8 +81,14 @@
 
 .mm-empty { color: var(--text-faint); padding: 0.5em; }
 
-/* ----- حالت ویرایش بلاک: راست‌چین و با فونت متن Obsidian (نه مونواسپیس) ----- */
+/* ----- حالت ویرایش بلاک: راست‌چین/چپ‌چین و با فونت متن Obsidian ----- */
 .cm-line.mm-edit-line { direction: rtl; text-align: right; }
+.cm-line.mm-edit-line[dir="ltr"],
+.cm-line.mm-edit-line.mm-edit-ltr { direction: ltr !important; text-align: left !important; }
+.cm-line.mm-edit-line[dir="rtl"],
+.cm-line.mm-edit-line.mm-edit-rtl { direction: rtl !important; text-align: right !important; }
+.mm-slider-popover.mm-pop-ltr { direction: ltr; }
+.mm-slider-popover.mm-pop-ltr .mm-pop-val.is-default { direction: ltr; }
 .cm-line.mm-edit-line,
 .cm-line.mm-edit-line span {
   font-family: var(--font-text) !important;

@@ -233,11 +233,8 @@ const DEFAULTS = {
 };
 const PALETTE = 8;
 const NS = "http://www.w3.org/2000/svg";
-// فقط اگر متن نشانه‌ی مارک‌داون داشت رندر کامل می‌شود؛ وگرنه متن ساده (سریع‌تر)
-const SPECIAL = /[\[\]*_`$~|^\\<>#]|==/;
+const SPECIAL = /[\[\]*_`$~|^\<>#]|==/;
 
-// فلش‌ها در viewBox ‎0 0 30 12‎ و رو به چپ کشیده شده‌اند (در حالت LTR با CSS برعکس می‌شوند)
-// [مسیر، گزینه‌ها]  f: پر شده | w: ضخامت خط
 const ARROW_DEFS = {
   thin: [["M28 6H4"], ["M8.5 2L4 6l4.5 4"]],
   equal: [["M27 4.4H9"], ["M27 7.6H9"], ["M10.5 1.4L4 6l6.5 4.6"]],
@@ -270,8 +267,6 @@ function makeArrow(type) {
   return span;
 }
 
-/* ---------- پارس مایندمپ ---------- */
-// از یک خط: متن، عنوان (بین دو نشانه‌ی عنوان)، توضیح‌ها، و نشانه‌ی آکولاد گروهی (+ نتیجه) را جدا می‌کند
 function tokenize(body, M) {
   const out = { text: "", title: "", notes: [], group: false, result: "" };
   const kinds = [["t", M.t], ["n", M.n], ["g", M.g]];
@@ -310,7 +305,6 @@ function parse(source, M) {
     const indent = line.match(/^ */)[0].length;
     const tk = tokenize(line.trim(), M);
 
-    // خطی که فقط عنوان/توضیح/نشانه‌ی گروه دارد -> به گره‌ی قبلی می‌چسبد
     if (!tk.text) {
       if (last) {
         if (tk.title) last.title = tk.title;
@@ -329,16 +323,13 @@ function parse(source, M) {
   return { opts, roots };
 }
 
-/* ---------- پارس بلاک کروشه (درخت معکوس با تورفتگی) ----------
-   خط با تورفتگی بیشتر، «نتیجه»ی همه‌ی خطوطِ منتظر با تورفتگی کمتر است.
-   فقط ترتیبِ مقدار تورفتگی مهم است (بهتر است Tab باشد)؛ هم‌عرض شدن را ساختار درخت تعیین می‌کند. */
 function indentWidth(raw) {
   return raw.match(/^[\t ]*/)[0].replace(/\t/g, "    ").length;
 }
 
 function parseBracket(source, M) {
   const opts = {};
-  const groups = []; // هر عضو: ریشه‌ی یک درخت
+  const groups = [];
   let pending = {};
   let seq = 0;
   let started = false;
@@ -363,14 +354,12 @@ function parseBracket(source, M) {
     started = true;
     const level = indentWidth(raw);
     const tk = tokenize(raw.trim(), M);
-    // خطی که فقط عنوان/توضیح دارد به خط قبلی می‌چسبد
     if (!tk.text) {
       if (last) { if (tk.title) last.title = tk.title; last.notes.push(...tk.notes); }
       continue;
     }
     const node = { text: tk.text, title: tk.title, notes: tk.notes, level, seq: seq++, children: [] };
     last = node;
-    // نتیجه‌ی همه‌ی خطوط منتظرِ کم‌تورفتگی‌تر (به ترتیب ظاهر شدن) است
     const lower = Object.keys(pending).map(Number).filter((k) => k < level && pending[k].length);
     if (lower.length) {
       const kids = [];
@@ -393,13 +382,9 @@ function bracePath(w, h, style) {
          `Q${xm} ${y} ${xm} ${y + r}L${xm} ${h - 1 - r}Q${xm} ${h - 1} ${x0} ${h - 1}`;
 }
 
-/* چیدمان درخت معکوس (مختصات منطقی: x از ابتدای خط، y از بالا).
-   هر گره: { w, h, children }. ستون هر گره = ارتفاعش (برگ = ستون اول، راست‌چین با مقدمات)؛ هر ستون هم‌عرض می‌شود.
-   فرزندان زیر هم می‌آیند؛ گره وسط بازه‌ی «جعبه‌ی فرزندان» می‌نشیند و آکولادش همان بازه را می‌گیرد. */
 function layoutTree(root, gut, gapS, gapB) {
   const all = [];
   const col = new Map();
-  // مقدمه‌ها (برگ‌ها) همیشه در ستون اول؛ هر نتیجه یک ستون بعد از بالاترین فرزندش
   const calc = (n) => {
     all.push(n);
     if (!n.children.length) { col.set(n, 0); return 0; }
@@ -452,7 +437,6 @@ function layoutTree(root, gut, gapS, gapB) {
     if (!n.children.length) continue;
     const cc = Math.max(...n.children.map(colOf));
     braces.push({ x: x[cc] + colW[cc], y0: n.span[0] - minY, y1: n.span[1] - minY });
-    // فرزندی که در ستونی دورتر (مقدمات) نشسته با خط‌چین به آکولاد وصل می‌شود
     for (const k of n.children) {
       const ck = colOf(k);
       if (ck < cc) leaders.push({ x1: x[ck] + colW[ck], x2: x[cc] + colW[cc], y: k.y + k.h / 2 });
@@ -461,7 +445,6 @@ function layoutTree(root, gut, gapS, gapB) {
   return { braces, leaders, W: x[D] + colW[D], H: maxY - minY };
 }
 
-// گروه‌بندی آکولادهای مایندمپ: گره‌های دارای نشانه که در خروجی کنار هم‌اند (برگ‌های پشت‌سرهم)
 function computeGroups(roots) {
   const groups = [];
   let idx = 0;
@@ -491,7 +474,6 @@ function computeGroups(roots) {
   return groups;
 }
 
-// بدون تغییر اندازه‌ی طرح، آن را با عرض صفحه تطبیق می‌دهد (فقط کوچک می‌کند)
 function fitWidth(scroll, inner) {
   inner.style.transform = "";
   scroll.style.height = "";
@@ -505,11 +487,9 @@ function fitWidth(scroll, inner) {
   return s;
 }
 
-/* ---------- ویرایشگر ---------- */
 const FENCE_LANG = /^[\s>]*(?:`{3,}|~{3,})\s*(mindmap|bracket)\b/i;
 const ANY_FENCE = /^[\s>]*(?:`{3,}|~{3,})/;
 
-// اگر مکان‌نما داخل بلاک mindmap/bracket باشد، نام آن را برمی‌گرداند
 function blockLang(state) {
   const doc = state.doc;
   const cur = doc.lineAt(state.selection.main.head);
@@ -546,7 +526,6 @@ function changeIndent(view, dir) {
   }
   if (changes.length) {
     const changeSet = view.state.changes(changes);
-    // نگاشت مکان‌نما با جهت جلو (assoc=1) تا بعد از تب قرار گیرد و قبل از تب تایپ نشود
     const selection = view.state.selection.map(changeSet, 1);
     view.dispatch({ changes: changeSet, selection, userEvent: dir > 0 ? "input.indent" : "delete.dedent" });
   }
@@ -566,25 +545,64 @@ function enterKeepIndent(view) {
   return true;
 }
 
-// خطوط داخل بلاک‌های mindmap/bracket را راست‌چین می‌کند
 function buildDecorations(view, plugin) {
   const b = new RangeSetBuilder();
-  if (plugin.settings.dir === "ltr") return b.finish();
   const doc = view.state.doc;
-  const deco = Decoration.line({ class: "mm-edit-line", attributes: { dir: "rtl" } });
-  let open = null; // null | "mm" | "other"
+  const defaultDir = plugin.settings.dir || (plugin.settings.language === "en" ? "ltr" : "rtl");
+
+  const decoRtl = Decoration.line({
+    class: "mm-edit-line mm-edit-rtl",
+    attributes: { dir: "rtl", style: "direction: rtl; text-align: right;" }
+  });
+  const decoLtr = Decoration.line({
+    class: "mm-edit-line mm-edit-ltr",
+    attributes: { dir: "ltr", style: "direction: ltr; text-align: left;" }
+  });
+
+  let inBlock = false;
+  let blockLines = [];
+  let blockDir = defaultDir;
+
+  const flushBlock = () => {
+    if (!blockLines.length) return;
+    const deco = (blockDir === "ltr") ? decoLtr : decoRtl;
+    for (const line of blockLines) {
+      b.add(line.from, line.from, deco);
+    }
+    blockLines = [];
+    blockDir = defaultDir;
+  };
+
   for (let n = 1; n <= doc.lines; n++) {
     const line = doc.line(n);
     if (ANY_FENCE.test(line.text)) {
-      open = open === null ? (FENCE_LANG.test(line.text) ? "mm" : "other") : null;
+      if (!inBlock) {
+        if (FENCE_LANG.test(line.text)) {
+          inBlock = true;
+          blockLines = [];
+          blockDir = defaultDir;
+        }
+      } else {
+        flushBlock();
+        inBlock = false;
+      }
       continue;
     }
-    if (open === "mm") b.add(line.from, line.from, deco);
+    if (inBlock) {
+      const m = line.text.match(/^\s*@dir\s*[=:]\s*(\S+)/i);
+      if (m) {
+        const val = m[1].toLowerCase();
+        if (val === "ltr" || val === "rtl") {
+          blockDir = val;
+        }
+      }
+      blockLines.push(line);
+    }
   }
+  flushBlock();
   return b.finish();
 }
 
-/* ---------- رندر ---------- */
 class MindmapChild extends MarkdownRenderChild {
   constructor(el, cleanup) { super(el); this.cleanup = cleanup; }
   onunload() { this.cleanup(); }
@@ -594,12 +612,21 @@ module.exports = class RtlMindmapPlugin extends Plugin {
   async onload() {
     this.settings = Object.assign({}, DEFAULTS, await this.loadData());
     this.instances = new Set();
+    this.versionCounter = 0;
     const plugin = this;
 
     const rtlPlugin = ViewPlugin.fromClass(
       class {
-        constructor(view) { this.decorations = buildDecorations(view, plugin); }
-        update(u) { if (u.docChanged) this.decorations = buildDecorations(u.view, plugin); }
+        constructor(view) {
+          this.version = plugin.versionCounter;
+          this.decorations = buildDecorations(view, plugin);
+        }
+        update(u) {
+          if (u.docChanged || u.viewportChanged || this.version !== plugin.versionCounter) {
+            this.version = plugin.versionCounter;
+            this.decorations = buildDecorations(u.view, plugin);
+          }
+        }
       },
       { decorations: (v) => v.decorations }
     );
@@ -673,7 +700,11 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     new Notice(t.commands.noticePrefix + map[this.settings[key]]);
   }
 
-  refreshAll() { this.instances.forEach((i) => i.refresh()); }
+  refreshAll() {
+    this.versionCounter++;
+    this.instances.forEach((i) => i.refresh());
+    try { if (this.app.workspace.updateOptions) this.app.workspace.updateOptions(); } catch (e) {}
+  }
 
   markers() {
     return {
@@ -683,7 +714,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     };
   }
 
-  // اولویت: گزینه‌ی داخل بلاک (@key=...) > متغیر CSS > تنظیمات افزونه
   resolveOpt(container, opts, optKey, cssVar, map, settingKey) {
     const o = opts[optKey];
     if (map[o]) return o;
@@ -692,7 +722,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     return this.settings[settingKey];
   }
 
-  // درج یا حذف تنظیمات اختصاصی در ابتدای کدبلاک با @ (پشتیبانی از چند گزینه همزمان)
   async updateBlockOptions(ctx, updates) {
     try {
       const file = this.app.vault.getAbstractFileByPath(ctx.sourcePath);
@@ -765,13 +794,12 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     });
   }
 
-  // نمایش پاپ‌آپ اسلایدر با قابلیت تنظیم زنده (Live) و بازنشانی به پیش‌فرض
   showMultiSliderPopup(anchorEl, title, items, onApply, onLiveChange) {
     document.querySelectorAll(".mm-slider-popover").forEach((p) => p.remove());
 
     const t = this.t();
     const pop = document.createElement("div");
-    pop.className = "mm-slider-popover";
+    pop.className = "mm-slider-popover" + (this.settings.language === "en" ? " mm-pop-ltr" : "");
 
     pop.createDiv({ cls: "mm-pop-title", text: title });
 
@@ -851,7 +879,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     });
     btnCancel.addEventListener("click", (e) => {
       e.stopPropagation();
-      // بازگرداندن مقادیر لایو به حالت اولیه
       if (onLiveChange) {
         for (const sd of slidersData) {
           onLiveChange(sd.key, sd.initialVal);
@@ -895,7 +922,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     document.body.appendChild(pop);
   }
 
-  // دکمه‌های خروجی و روشن/خاموش کردن توضیحات (گوشه‌ی بالا-چپ نمودار) + تنظیمات اختصاصی بلاک
   addTools(container, getEl, ctx, onToggle, opts, scheduleRelayout, isBracket = false) {
     const t = this.t();
     container.dataset.notes = "on";
@@ -904,7 +930,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     const mkBtn = (icon, label, onClick, cls = "") => {
       const b = bar.createEl("button", { cls: "mm-tool clickable-icon " + cls, attr: { "aria-label": label, type: "button" } });
       setIcon(b, icon);
-      // کلیک روی دکمه نباید بلاک را وارد حالت ویرایش کند
       for (const ev of ["mousedown", "mouseup", "pointerdown", "pointerup", "touchstart"]) b.addEventListener(ev, stop);
       b.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); onClick(e, b); });
       return b;
@@ -924,15 +949,12 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     });
     nb.addClass("is-active");
 
-    // فاصله‌ی بصری بین دکمه‌های عمومی خروجی/توضیحات و تنظیمات اختصاصی بلاک
     const sep = bar.createDiv({ cls: "mm-tool-sep" });
 
-    // منوی گزینه‌های اختصاصی همین بلاک — خواندن پویای وضعیت پیش‌فرض سراسری هنگام هر بار کلیک
     const addOptMenu = (icon, title, optKey, map, defKey, isFirst = false) => {
       const btn = mkBtn(icon, title, (e) => {
         const activeVal = opts[optKey];
         const hasCustom = activeVal !== undefined;
-        // خواندن در لحظه‌ی تنظیمات پیش‌فرض سراسری
         const currentDefVal = this.settings[defKey] || DEFAULTS[defKey];
         const defLabel = t.tools.defaultOpt(map[currentDefVal] || "");
 
@@ -955,7 +977,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
       return btn;
     };
 
-    // گزینه‌های مایندمپ و کروشه
     addOptMenu("shapes", t.tools.optShape, "shape", t.shapes, "shape", true);
     if (!isBracket) {
       addOptMenu("git-branch", t.tools.optLine, "line", t.lines, "line");
@@ -966,7 +987,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     addOptMenu("move-left", t.tools.optArrow, "arrow", t.arrows, "arrow");
     addOptMenu("align-center", t.tools.optAlign, "align", t.aligns, "align");
 
-    // تنظیم زنده در استایل کانتینر حین حرکت اسلایدر (همگام‌سازی مستقیم با شیء opts تا در draw بازنویسی نشود)
     const applyLive = (key, val) => {
       if (val !== null && val !== undefined) {
         opts[key] = String(val);
@@ -977,12 +997,9 @@ module.exports = class RtlMindmapPlugin extends Plugin {
       if (scheduleRelayout) scheduleRelayout();
     };
 
-    // دکمه‌ی تجمیع‌شده‌ی تنظیم عرض با اسلایدرهای لایو
     if (!isBracket) {
-      // یک دکمه واحد برای تنظیم عرض ریشه و سایر گره‌های مایندمپ
       const hasAnyWidth = opts.rootwidth !== undefined || opts.nodewidth !== undefined;
       mkBtn("maximize", t.tools.optWidthMindmap, (e, b) => {
-        // خواندن در لحظه هنگام کلیک
         const defRoot = this.settings.rootMaxWidth || DEFAULTS.rootMaxWidth;
         const defNode = this.settings.nodeMaxWidth || DEFAULTS.nodeMaxWidth;
         const curRoot = opts.rootwidth ? parseFloat(opts.rootwidth) : defRoot;
@@ -1014,10 +1031,8 @@ module.exports = class RtlMindmapPlugin extends Plugin {
         );
       }, hasAnyWidth ? "is-custom" : "");
     } else {
-      // یک دکمه برای تنظیم عرض خطوط کروشه
       const hasBlockWidth = opts.blockwidth !== undefined;
       mkBtn("stretch-horizontal", t.tools.optWidthBracket, (e, b) => {
-        // خواندن در لحظه هنگام کلیک
         const defBlock = this.settings.blockMaxWidth || DEFAULTS.blockMaxWidth;
         const curBlock = opts.blockwidth ? parseFloat(opts.blockwidth) : defBlock;
 
@@ -1041,7 +1056,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     }
   }
 
-  // اعمال مقادیر حداکثر عرض و تراز بر استایل کانتینر
   applySizingStyles(container, opts) {
     const t = this.t();
     const rootW = opts.rootwidth ? parseFloat(opts.rootwidth) : (this.settings.rootMaxWidth || DEFAULTS.rootMaxWidth);
@@ -1055,7 +1069,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     container.style.setProperty("--mm-text-align", alignVal);
   }
 
-  // خروجی: نمودار را (با استایل‌های محاسبه‌شده) داخل یک SVG می‌گذارد و در صورت نیاز به PNG/JPG تبدیل می‌کند
   async exportDiagram(el, container, fmt, sourcePath) {
     const t = this.t();
     try {
@@ -1173,7 +1186,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     };
     const inst = { refresh: () => { apply(); schedule(); } };
 
-    // هندسه‌ی آکولادهای گروهی (مختصات محلی درخت، بدون scale)
     const measureGroups = (tr, k, fs, orient, rtl, style) => {
       const loc = (e) => {
         const r = e.getBoundingClientRect();
@@ -1197,7 +1209,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
         const w = g.resEl ? g.resEl.offsetWidth : 0;
         const h = g.resEl ? g.resEl.offsetHeight : 0;
         const o = { g, leads: [], res: null };
-        let br; // مستطیل آکولاد
+        let br;
         if (orient === "h") {
           const len = ext.b - ext.t;
           o.d = bracePath(bw, len, style);
@@ -1249,7 +1261,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
       tree.style.transform = "";
       scroll.style.height = "";
 
-      // جای کافی برای آکولاد و نتیجه (که بیرون از جریان صفحه‌اند)
       if (groups.length) {
         const tr0 = tree.getBoundingClientRect();
         if (!tr0.width) return;
@@ -1332,7 +1343,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     ctx.addChild(child);
     const fill = (t, text) => this.fillText(t, text, ctx, child, schedule);
 
-    // branchIdx: شاخه‌ی اصلی | sibIdx: ترتیب بین هم‌سطح‌ها | level: عمق
     const build = (node, parentEl, level, branchIdx, sibIdx, parent) => {
       const colorCls = level >= 1
         ? `mm-b${branchIdx % PALETTE} mm-d${(level - 1) % PALETTE} mm-s${sibIdx % PALETTE}`
@@ -1361,7 +1371,6 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     };
     roots.forEach((r) => build(r, forest, 0, 0, 0, null));
 
-    // آکولادهای گروهی: نتیجه‌ها عناصر مطلقِ داخل درخت‌اند و جای‌گذاری‌شان با draw است
     groups = computeGroups(roots);
     for (const g of groups) {
       if (!g.result) continue;
@@ -1411,12 +1420,11 @@ module.exports = class RtlMindmapPlugin extends Plugin {
       const gut = bw + 2 * pad;
       const gapS = Math.round(fs * 0.1), gapB = Math.round(fs * 0.9);
       const style = container.dataset.bracket;
-      // خط‌چین راهنما: تنظیمات افزونه، یا @leader=off / @leader=on داخل بلاک
       const showLeaders = opts.leader ? opts.leader !== "off" : this.settings.bracketLeaders;
       for (const c of canv) {
         for (const n of c.nodes) n.el.style.width = "";
         for (const n of c.nodes) { n.w = wOf(n.el); n.h = hOf(n.el); }
-        if (!c.root.w) return; // هنوز در صفحه چیده نشده؛ ResizeObserver دوباره صدا می‌زند
+        if (!c.root.w) return;
         const L = layoutTree(c.root, gut, gapS, gapB);
         for (const n of c.nodes) {
           n.el.style.insetInlineStart = n.x + "px";
@@ -1502,7 +1510,6 @@ class MindmapSettingTab extends PluginSettingTab {
     const t = p.t();
     const save = async () => { await p.saveData(p.settings); p.refreshAll(); };
 
-    // انتخاب زبان
     new Setting(containerEl)
       .setName(t.settings.languageName)
       .setDesc(t.settings.languageDesc)
@@ -1510,8 +1517,13 @@ class MindmapSettingTab extends PluginSettingTab {
         Object.entries(LANGUAGES).forEach(([k, v]) => d.addOption(k, v));
         d.setValue(p.settings.language || "fa").onChange(async (v) => {
           p.settings.language = v;
+          if (v === "en") {
+            p.settings.dir = "ltr";
+          } else if (v === "fa") {
+            p.settings.dir = "rtl";
+          }
           await save();
-          this.display(); // رفرش فوری صفحه تنظیمات برای تغییر زبان
+          this.display();
         });
       });
 
