@@ -3,31 +3,227 @@ const { Plugin, PluginSettingTab, Setting, MarkdownRenderer, MarkdownRenderChild
 const { Prec, RangeSetBuilder } = require("@codemirror/state");
 const { keymap, ViewPlugin, Decoration } = require("@codemirror/view");
 
-const SHAPES = { rounded: "مستطیل گوشه‌گرد", rect: "مستطیل", pill: "قرصی", circle: "دایره / بیضی", diamond: "لوزی", none: "بدون کادر" };
-const LINES = { curve: "منحنی", straight: "مستقیم", elbow: "زانویی" };
-const DIRS = { rtl: "راست به چپ", ltr: "چپ به راست", ttb: "بالا به پایین", btt: "پایین به بالا" };
-const COLOR_MODES = {
-  branch: "هر شاخه یک رنگ",
-  level: "هر سطح یک رنگ",
-  sibling: "به ترتیب هم‌سطح‌ها (اولی رنگ ۱، دومی رنگ ۲، ...)",
+const I18N = {
+  fa: {
+    langName: "فارسی",
+    shapes: { rounded: "مستطیل گوشه‌گرد", rect: "مستطیل", pill: "قرصی", circle: "دایره / بیضی", diamond: "لوزی", none: "بدون کادر" },
+    lines: { curve: "منحنی", straight: "مستقیم", elbow: "زانویی" },
+    dirs: { rtl: "راست به چپ", ltr: "چپ به راست", ttb: "بالا به پایین", btt: "پایین به بالا" },
+    colorModes: {
+      branch: "هر شاخه یک رنگ",
+      level: "هر سطح یک رنگ",
+      sibling: "به ترتیب هم‌سطح‌ها (اولی رنگ ۱، دومی رنگ ۲، ...)",
+    },
+    brackets: { curly: "آکولاد", square: "کروشه", line: "خط ساده" },
+    arrows: {
+      thin: "کشیده",
+      equal: "دو خطی (⇐)",
+      implies: "دو خطی پر (⟸)",
+      bar: "با خط ابتدا (↤)",
+      sleek: "تیز",
+      dart: "تیر",
+      bold: "ضخیم",
+    },
+    aligns: {
+      center: "وسط‌چین",
+      right: "راست‌چین",
+      left: "چپ‌چین",
+      justify: "تراز از دو طرف (جاستیفای)",
+    },
+    commands: {
+      insertMindmap: "درج بلاک مایندمپ (Insert mindmap)",
+      insertBracket: "درج بلاک کروشه / نتیجه‌گیری (Insert bracket)",
+      ribbonMindmap: "درج مایندمپ",
+      ribbonBracket: "درج کروشه / نتیجه‌گیری",
+      cycleShape: "تغییر شکل گره‌ها (چرخشی)",
+      cycleLine: "تغییر نوع خط‌ها (چرخشی)",
+      cycleColor: "تغییر حالت رنگ‌بندی (چرخشی)",
+      cycleBracket: "تغییر نوع کروشه (چرخشی)",
+      cycleArrow: "تغییر نوع فلش عنوان (چرخشی)",
+      cycleAlign: "تغییر تراز متن (چرخشی)",
+      toggleDir: "تغییر جهت (RTL / LTR)",
+      noticePrefix: "مایندمپ: ",
+    },
+    tools: {
+      exportBtn: "خروجی گرفتن (SVG / PNG / JPG)",
+      exportSvg: "خروجی SVG",
+      exportPng: "خروجی PNG",
+      exportJpg: "خروجی JPG",
+      toggleNotes: "نمایش / عدم نمایش توضیحات (::) در نمودار و خروجی",
+      optShape: "شکل گره‌ها در این بلاک",
+      optLine: "نوع خط‌ها در این بلاک",
+      optColor: "رنگ‌بندی در این بلاک",
+      optDir: "جهت نمودار در این بلاک",
+      optBracket: "نوع آکولاد / کروشه در این بلاک",
+      optArrow: "نوع فلش عنوان در این بلاک",
+      optAlign: "تراز متن در این بلاک",
+      defaultOpt: (name) => `پیش‌فرض (${name || "پیش‌فرض"})`,
+      optWidthMindmap: "تنظیم حداکثر عرض گره‌ها در این بلاک",
+      optWidthBracket: "تنظیم حداکثر عرض خطوط کروشه در این بلاک",
+      popupTitleMindmap: "تنظیم حداکثر عرض گره‌های مایندمپ",
+      popupTitleBracket: "تنظیم حداکثر عرض خطوط کروشه",
+      rootLabel: "عنوان اصلی (ریشه):",
+      nodeLabel: "سایر گره‌ها:",
+      blockLabel: "حداکثر عرض خطوط:",
+      btnReset: "پیش‌فرض",
+      btnResetTitle: (v) => `بازنشانی به پیش‌فرض (${v}em)`,
+      btnCancel: "لغو",
+      btnSave: "ذخیره در بلاک",
+      defaultBadge: (v) => `پیش‌فرض (${v}em)`,
+      emptyMindmap: "مایندمپ خالی است",
+      emptyBracket: "بلاک خالی است",
+      exportNotReady: "نمودار هنوز آماده نیست.",
+      exportSaved: "خروجی ذخیره شد: ",
+      exportFailed: "ساخت خروجی ناموفق بود",
+      exportTrySvg: "؛ خروجی SVG را امتحان کنید.",
+    },
+    settings: {
+      languageName: "زبان افزونه (Language)",
+      languageDesc: "زبان رابط کاربری و تنظیمات را انتخاب کنید.",
+      shapeName: "شکل گره‌ها",
+      shapeDesc: "در بلاک: @shape=pill | در CSS: --mm-shape: pill",
+      lineName: "نوع خط‌ها",
+      lineDesc: "در بلاک: @line=elbow | در CSS: --mm-line-style: elbow",
+      colorName: "رنگ‌بندی",
+      colorDesc: "در بلاک: @color=level | در CSS: --mm-color-mode: level",
+      bracketName: "نوع آکولاد / کروشه",
+      bracketDesc: "در بلاک: @bracket=square | در CSS: --mm-bracket-style: square",
+      arrowName: "نوع فلش عنوان",
+      arrowDesc: "در بلاک: @arrow=curve | در CSS: --mm-arrow-style: curve",
+      alignName: "تراز متن داخل گره‌ها",
+      alignDesc: "در بلاک: @align=center | در CSS: --mm-text-align: center",
+      rootWidthName: "حداکثر عرض عنوان اصلی (ریشه) مایندمپ",
+      rootWidthDesc: "بر حسب em — در CSS: --mm-root-max-width",
+      nodeWidthName: "حداکثر عرض سایر گره‌های مایندمپ",
+      nodeWidthDesc: "بر حسب em — در CSS: --mm-node-max-width",
+      blockWidthName: "حداکثر عرض خطوط در بلاک کروشه",
+      blockWidthDesc: "بر حسب em — در CSS: --mm-block-max-width",
+      leadersName: "خط‌چین راهنما",
+      leadersDesc: "اتصال آیتم‌ها به آکولاد با خط‌چین کمرنگ (در مایندمپ و کروشه). در بلاک: @leader=off",
+      dirName: "جهت کلی نمودار",
+      dirDesc: "راست‌به‌چپ، چپ‌به‌راست، بالا‌به‌پایین یا پایین‌به‌بالا. در بلاک: @dir=ttb (در بلاک کروشه، بالا/پایین مثل راست‌به‌چپ است)",
+      markerNoteName: "نشانه‌ی توضیح کمرنگ",
+      markerNoteDesc: "متن بین دو نشانه، کمرنگ زیر گره می‌آید.",
+      markerTitleName: "نشانه‌ی عنوان",
+      markerTitleDesc: "متن بین دو نشانه، با فلش جلوی گره می‌آید.",
+      markerGroupName: "نشانه‌ی آکولاد گروهی",
+      markerGroupDesc: "آخر چند قسمی که در خروجی کنار هم‌اند (هم‌سطح یا غیرهم‌سطح) بگذارید؛ متن بعد از آن، نتیجه‌ی آکولاد است. بلاک‌های باز را یک‌بار ببندید و باز کنید.",
+      cssHint: "اگر در CSS یکی از متغیرهای بالا را تعیین کنید، بر تنظیم سراسری اولویت دارد (اما @... داخل بلاک از همه بالاتر است).",
+    }
+  },
+  en: {
+    langName: "English",
+    shapes: { rounded: "Rounded rectangle", rect: "Rectangle", pill: "Pill", circle: "Circle / Oval", diamond: "Diamond", none: "No border" },
+    lines: { curve: "Curved", straight: "Straight", elbow: "Elbow" },
+    dirs: { rtl: "Right to Left (RTL)", ltr: "Left to Right (LTR)", ttb: "Top to Bottom", btt: "Bottom to Top" },
+    colorModes: {
+      branch: "Color per branch",
+      level: "Color per level",
+      sibling: "Order of siblings (1st color 1, 2nd color 2, ...)",
+    },
+    brackets: { curly: "Curly brace", square: "Square bracket", line: "Straight line" },
+    arrows: {
+      thin: "Thin",
+      equal: "Double line (⇐)",
+      implies: "Double solid (⟸)",
+      bar: "With start bar (↤)",
+      sleek: "Sleek",
+      dart: "Dart",
+      bold: "Bold",
+    },
+    aligns: {
+      center: "Center",
+      right: "Right",
+      left: "Left",
+      justify: "Justify",
+    },
+    commands: {
+      insertMindmap: "Insert mindmap block",
+      insertBracket: "Insert bracket / conclusion block",
+      ribbonMindmap: "Insert mindmap",
+      ribbonBracket: "Insert bracket / conclusion",
+      cycleShape: "Cycle node shape",
+      cycleLine: "Cycle line style",
+      cycleColor: "Cycle color mode",
+      cycleBracket: "Cycle bracket style",
+      cycleArrow: "Cycle title arrow style",
+      cycleAlign: "Cycle text alignment",
+      toggleDir: "Toggle direction (RTL / LTR)",
+      noticePrefix: "Mindmap: ",
+    },
+    tools: {
+      exportBtn: "Export diagram (SVG / PNG / JPG)",
+      exportSvg: "Export SVG",
+      exportPng: "Export PNG",
+      exportJpg: "Export JPG",
+      toggleNotes: "Toggle notes (::) in diagram and export",
+      optShape: "Node shape in this block",
+      optLine: "Line style in this block",
+      optColor: "Color mode in this block",
+      optDir: "Diagram direction in this block",
+      optBracket: "Bracket style in this block",
+      optArrow: "Title arrow in this block",
+      optAlign: "Text alignment in this block",
+      defaultOpt: (name) => `Default (${name || "Default"})`,
+      optWidthMindmap: "Adjust node max width in this block",
+      optWidthBracket: "Adjust bracket line max width in this block",
+      popupTitleMindmap: "Mindmap Node Max Width",
+      popupTitleBracket: "Bracket Line Max Width",
+      rootLabel: "Main root node:",
+      nodeLabel: "Other nodes:",
+      blockLabel: "Line max width:",
+      btnReset: "Default",
+      btnResetTitle: (v) => `Reset to default (${v}em)`,
+      btnCancel: "Cancel",
+      btnSave: "Save to block",
+      defaultBadge: (v) => `Default (${v}em)`,
+      emptyMindmap: "Mindmap is empty",
+      emptyBracket: "Block is empty",
+      exportNotReady: "Diagram is not ready yet.",
+      exportSaved: "Export saved to: ",
+      exportFailed: "Export failed",
+      exportTrySvg: "; try exporting as SVG instead.",
+    },
+    settings: {
+      languageName: "Language",
+      languageDesc: "Choose the interface and settings display language.",
+      shapeName: "Node Shape",
+      shapeDesc: "In block: @shape=pill | In CSS: --mm-shape: pill",
+      lineName: "Line Style",
+      lineDesc: "In block: @line=elbow | In CSS: --mm-line-style: elbow",
+      colorName: "Color Mode",
+      colorDesc: "In block: @color=level | In CSS: --mm-color-mode: level",
+      bracketName: "Bracket / Brace Style",
+      bracketDesc: "In block: @bracket=square | In CSS: --mm-bracket-style: square",
+      arrowName: "Title Arrow Style",
+      arrowDesc: "In block: @arrow=curve | In CSS: --mm-arrow-style: curve",
+      alignName: "Text Alignment inside Nodes",
+      alignDesc: "In block: @align=center | In CSS: --mm-text-align: center",
+      rootWidthName: "Max Width of Root Node",
+      rootWidthDesc: "In em units — In CSS: --mm-root-max-width",
+      nodeWidthName: "Max Width of Other Mindmap Nodes",
+      nodeWidthDesc: "In em units — In CSS: --mm-node-max-width",
+      blockWidthName: "Max Width of Lines in Bracket Block",
+      blockWidthDesc: "In em units — In CSS: --mm-block-max-width",
+      leadersName: "Guide Leader Lines",
+      leadersDesc: "Connect items to braces with faint dashed lines (mindmap and bracket). In block: @leader=off",
+      dirName: "General Diagram Direction",
+      dirDesc: "Right-to-Left, Left-to-Right, Top-to-Bottom, or Bottom-to-Top. In block: @dir=ttb",
+      markerNoteName: "Subtle Note Marker",
+      markerNoteDesc: "Text between markers appears muted below node.",
+      markerTitleName: "Title Marker",
+      markerTitleDesc: "Text between markers appears with an arrow before node.",
+      markerGroupName: "Group Brace Marker",
+      markerGroupDesc: "Place at end of adjacent items; text following is the bracket conclusion.",
+      cssHint: "Specifying any of the above variables in CSS takes precedence over global settings (block-level @options take highest priority).",
+    }
+  }
 };
-const BRACKETS = { curly: "آکولاد", square: "کروشه", line: "خط ساده" };
-const ARROWS = {
-  thin: "کشیده",
-  equal: "دو خطی (⇐)",
-  implies: "دو خطی پر (⟸)",
-  bar: "با خط ابتدا (↤)",
-  sleek: "تیز",
-  dart: "تیر",
-  bold: "ضخیم",
-};
-const ALIGNS = {
-  center: "وسط‌چین",
-  right: "راست‌چین",
-  left: "چپ‌چین",
-  justify: "تراز از دو طرف (جاستیفای)",
-};
+
+const LANGUAGES = { fa: "فارسی (Persian)", en: "English" };
+
 const DEFAULTS = {
+  language: "fa",
   shape: "rounded", line: "curve", dir: "rtl", colorMode: "branch", bracket: "curly", arrow: "thin",
   align: "center",
   rootMaxWidth: 16,
@@ -444,20 +640,28 @@ module.exports = class RtlMindmapPlugin extends Plugin {
       const ed = this.app.workspace.activeEditor?.editor;
       if (ed) insert(ed, lang);
     };
-    this.addCommand({ id: "insert-mindmap", name: "درج بلاک مایندمپ (Insert mindmap)", editorCallback: (ed) => insert(ed, "mindmap") });
-    this.addCommand({ id: "insert-bracket", name: "درج بلاک کروشه / نتیجه‌گیری (Insert bracket)", editorCallback: (ed) => insert(ed, "bracket") });
-    this.addRibbonIcon("network", "درج مایندمپ", withEditor("mindmap"));
-    this.addRibbonIcon("curly-braces", "درج کروشه / نتیجه‌گیری", withEditor("bracket"));
 
-    this.addCommand({ id: "cycle-shape", name: "تغییر شکل گره‌ها (چرخشی)", callback: () => this.cycle("shape", SHAPES) });
-    this.addCommand({ id: "cycle-line", name: "تغییر نوع خط‌ها (چرخشی)", callback: () => this.cycle("line", LINES) });
-    this.addCommand({ id: "cycle-color", name: "تغییر حالت رنگ‌بندی (چرخشی)", callback: () => this.cycle("colorMode", COLOR_MODES) });
-    this.addCommand({ id: "cycle-bracket", name: "تغییر نوع کروشه (چرخشی)", callback: () => this.cycle("bracket", BRACKETS) });
-    this.addCommand({ id: "cycle-arrow", name: "تغییر نوع فلش عنوان (چرخشی)", callback: () => this.cycle("arrow", ARROWS) });
-    this.addCommand({ id: "cycle-align", name: "تغییر تراز متن (چرخشی)", callback: () => this.cycle("align", ALIGNS) });
-    this.addCommand({ id: "toggle-dir", name: "تغییر جهت (RTL / LTR)", callback: () => this.cycle("dir", DIRS) });
+    const t = this.t();
+    this.addCommand({ id: "insert-mindmap", name: t.commands.insertMindmap, editorCallback: (ed) => insert(ed, "mindmap") });
+    this.addCommand({ id: "insert-bracket", name: t.commands.insertBracket, editorCallback: (ed) => insert(ed, "bracket") });
+    this.addRibbonIcon("network", t.commands.ribbonMindmap, withEditor("mindmap"));
+    this.addRibbonIcon("curly-braces", t.commands.ribbonBracket, withEditor("bracket"));
 
-    this.addSettingTab(new MindmapSettingTab(this.app, this));
+    this.addCommand({ id: "cycle-shape", name: t.commands.cycleShape, callback: () => this.cycle("shape", this.t().shapes) });
+    this.addCommand({ id: "cycle-line", name: t.commands.cycleLine, callback: () => this.cycle("line", this.t().lines) });
+    this.addCommand({ id: "cycle-color", name: t.commands.cycleColor, callback: () => this.cycle("colorMode", this.t().colorModes) });
+    this.addCommand({ id: "cycle-bracket", name: t.commands.cycleBracket, callback: () => this.cycle("bracket", this.t().brackets) });
+    this.addCommand({ id: "cycle-arrow", name: t.commands.cycleArrow, callback: () => this.cycle("arrow", this.t().arrows) });
+    this.addCommand({ id: "cycle-align", name: t.commands.cycleAlign, callback: () => this.cycle("align", this.t().aligns) });
+    this.addCommand({ id: "toggle-dir", name: t.commands.toggleDir, callback: () => this.cycle("dir", this.t().dirs) });
+
+    this.settingTab = new MindmapSettingTab(this.app, this);
+    this.addSettingTab(this.settingTab);
+  }
+
+  t() {
+    const lang = this.settings.language === "en" ? "en" : "fa";
+    return I18N[lang];
   }
 
   async cycle(key, map) {
@@ -465,7 +669,8 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     this.settings[key] = keys[(keys.indexOf(this.settings[key]) + 1) % keys.length];
     await this.saveData(this.settings);
     this.refreshAll();
-    new Notice("مایندمپ: " + map[this.settings[key]]);
+    const t = this.t();
+    new Notice(t.commands.noticePrefix + map[this.settings[key]]);
   }
 
   refreshAll() { this.instances.forEach((i) => i.refresh()); }
@@ -564,6 +769,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
   showMultiSliderPopup(anchorEl, title, items, onApply, onLiveChange) {
     document.querySelectorAll(".mm-slider-popover").forEach((p) => p.remove());
 
+    const t = this.t();
     const pop = document.createElement("div");
     pop.className = "mm-slider-popover";
 
@@ -577,7 +783,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
       itemHead.createSpan({ cls: "mm-pop-item-label", text: item.label });
       const valBadge = itemHead.createSpan({
         cls: "mm-pop-val",
-        text: item.isCustom ? `${item.currentVal}em` : `پیش‌فرض (${item.defaultVal}em)`
+        text: item.isCustom ? `${item.currentVal}em` : t.tools.defaultBadge(item.defaultVal)
       });
 
       const row = itemWrap.createDiv({ cls: "mm-pop-row" });
@@ -594,8 +800,8 @@ module.exports = class RtlMindmapPlugin extends Plugin {
 
       const resetBtn = row.createEl("button", {
         cls: "mm-pop-btn mm-pop-btn-reset",
-        text: "پیش‌فرض",
-        attr: { type: "button", title: `بازنشانی به پیش‌فرض (${item.defaultVal}em)` },
+        text: t.tools.btnReset,
+        attr: { type: "button", title: t.tools.btnResetTitle(item.defaultVal) },
       });
 
       let isCustom = item.isCustom;
@@ -608,7 +814,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
           valBadge.classList.remove("is-default");
         } else {
           slider.value = String(item.defaultVal);
-          valBadge.setText(`پیش‌فرض (${item.defaultVal}em)`);
+          valBadge.setText(t.tools.defaultBadge(item.defaultVal));
           valBadge.classList.add("is-default");
         }
         if (onLiveChange) {
@@ -640,7 +846,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
 
     const btnCancel = actions.createEl("button", {
       cls: "mm-pop-btn",
-      text: "لغو",
+      text: t.tools.btnCancel,
       attr: { type: "button" },
     });
     btnCancel.addEventListener("click", (e) => {
@@ -656,7 +862,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
 
     const btnApply = actions.createEl("button", {
       cls: "mm-pop-btn mod-cta",
-      text: "ذخیره در بلاک",
+      text: t.tools.btnSave,
       attr: { type: "button" },
     });
     btnApply.addEventListener("click", (e) => {
@@ -691,6 +897,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
 
   // دکمه‌های خروجی و روشن/خاموش کردن توضیحات (گوشه‌ی بالا-چپ نمودار) + تنظیمات اختصاصی بلاک
   addTools(container, getEl, ctx, onToggle, opts, scheduleRelayout, isBracket = false) {
+    const t = this.t();
     container.dataset.notes = "on";
     const bar = container.createDiv({ cls: "mm-tools" });
     const stop = (e) => e.stopPropagation();
@@ -702,14 +909,14 @@ module.exports = class RtlMindmapPlugin extends Plugin {
       b.addEventListener("click", (e) => { e.stopPropagation(); e.preventDefault(); onClick(e, b); });
       return b;
     };
-    mkBtn("download", "خروجی گرفتن (SVG / PNG / JPG)", (e) => {
+    mkBtn("download", t.tools.exportBtn, (e) => {
       const menu = new Menu();
-      for (const [fmt, title] of [["svg", "خروجی SVG"], ["png", "خروجی PNG"], ["jpg", "خروجی JPG"]]) {
+      for (const [fmt, title] of [["svg", t.tools.exportSvg], ["png", t.tools.exportPng], ["jpg", t.tools.exportJpg]]) {
         menu.addItem((it) => it.setTitle(title).setIcon("image").onClick(() => this.exportDiagram(getEl(), container, fmt, ctx.sourcePath)));
       }
       menu.showAtMouseEvent(e);
     });
-    const nb = mkBtn("message-square", "نمایش / عدم نمایش توضیحات (::) در نمودار و خروجی", (e, b) => {
+    const nb = mkBtn("message-square", t.tools.toggleNotes, (e, b) => {
       const on = container.dataset.notes !== "on";
       container.dataset.notes = on ? "on" : "off";
       b.toggleClass("is-active", on);
@@ -727,7 +934,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
         const hasCustom = activeVal !== undefined;
         // خواندن در لحظه‌ی تنظیمات پیش‌فرض سراسری
         const currentDefVal = this.settings[defKey] || DEFAULTS[defKey];
-        const defLabel = `پیش‌فرض (${map[currentDefVal] || "پیش‌فرض"})`;
+        const defLabel = t.tools.defaultOpt(map[currentDefVal] || "");
 
         const menu = new Menu();
         menu.addItem((it) =>
@@ -749,15 +956,15 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     };
 
     // گزینه‌های مایندمپ و کروشه
-    addOptMenu("shapes", "شکل گره‌ها در این بلاک", "shape", SHAPES, "shape", true);
+    addOptMenu("shapes", t.tools.optShape, "shape", t.shapes, "shape", true);
     if (!isBracket) {
-      addOptMenu("git-branch", "نوع خط‌ها در این بلاک", "line", LINES, "line");
-      addOptMenu("palette", "رنگ‌بندی در این بلاک", "color", COLOR_MODES, "colorMode");
+      addOptMenu("git-branch", t.tools.optLine, "line", t.lines, "line");
+      addOptMenu("palette", t.tools.optColor, "color", t.colorModes, "colorMode");
     }
-    addOptMenu("arrow-left-right", "جهت نمودار در این بلاک", "dir", DIRS, "dir");
-    addOptMenu("code-xml", "نوع آکولاد / کروشه در این بلاک", "bracket", BRACKETS, "bracket");
-    addOptMenu("move-left", "نوع فلش عنوان در این بلاک", "arrow", ARROWS, "arrow");
-    addOptMenu("align-center", "تراز متن در این بلاک", "align", ALIGNS, "align");
+    addOptMenu("arrow-left-right", t.tools.optDir, "dir", t.dirs, "dir");
+    addOptMenu("code-xml", t.tools.optBracket, "bracket", t.brackets, "bracket");
+    addOptMenu("move-left", t.tools.optArrow, "arrow", t.arrows, "arrow");
+    addOptMenu("align-center", t.tools.optAlign, "align", t.aligns, "align");
 
     // تنظیم زنده در استایل کانتینر حین حرکت اسلایدر (همگام‌سازی مستقیم با شیء opts تا در draw بازنویسی نشود)
     const applyLive = (key, val) => {
@@ -774,7 +981,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     if (!isBracket) {
       // یک دکمه واحد برای تنظیم عرض ریشه و سایر گره‌های مایندمپ
       const hasAnyWidth = opts.rootwidth !== undefined || opts.nodewidth !== undefined;
-      mkBtn("maximize", "تنظیم حداکثر عرض گره‌ها در این بلاک", (e, b) => {
+      mkBtn("maximize", t.tools.optWidthMindmap, (e, b) => {
         // خواندن در لحظه هنگام کلیک
         const defRoot = this.settings.rootMaxWidth || DEFAULTS.rootMaxWidth;
         const defNode = this.settings.nodeMaxWidth || DEFAULTS.nodeMaxWidth;
@@ -783,11 +990,11 @@ module.exports = class RtlMindmapPlugin extends Plugin {
 
         this.showMultiSliderPopup(
           b,
-          "تنظیم حداکثر عرض گره‌های مایندمپ",
+          t.tools.popupTitleMindmap,
           [
             {
               key: "rootwidth",
-              label: "عنوان اصلی (ریشه):",
+              label: t.tools.rootLabel,
               currentVal: curRoot,
               defaultVal: defRoot,
               min: 10, max: 60, step: 1,
@@ -795,7 +1002,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
             },
             {
               key: "nodewidth",
-              label: "سایر گره‌ها:",
+              label: t.tools.nodeLabel,
               currentVal: curNode,
               defaultVal: defNode,
               min: 14, max: 80, step: 1,
@@ -809,18 +1016,18 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     } else {
       // یک دکمه برای تنظیم عرض خطوط کروشه
       const hasBlockWidth = opts.blockwidth !== undefined;
-      mkBtn("stretch-horizontal", "تنظیم حداکثر عرض خطوط کروشه در این بلاک", (e, b) => {
+      mkBtn("stretch-horizontal", t.tools.optWidthBracket, (e, b) => {
         // خواندن در لحظه هنگام کلیک
         const defBlock = this.settings.blockMaxWidth || DEFAULTS.blockMaxWidth;
         const curBlock = opts.blockwidth ? parseFloat(opts.blockwidth) : defBlock;
 
         this.showMultiSliderPopup(
           b,
-          "تنظیم حداکثر عرض خطوط کروشه",
+          t.tools.popupTitleBracket,
           [
             {
               key: "blockwidth",
-              label: "حداکثر عرض خطوط:",
+              label: t.tools.blockLabel,
               currentVal: curBlock,
               defaultVal: defBlock,
               min: 14, max: 80, step: 1,
@@ -836,6 +1043,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
 
   // اعمال مقادیر حداکثر عرض و تراز بر استایل کانتینر
   applySizingStyles(container, opts) {
+    const t = this.t();
     const rootW = opts.rootwidth ? parseFloat(opts.rootwidth) : (this.settings.rootMaxWidth || DEFAULTS.rootMaxWidth);
     const nodeW = opts.nodewidth ? parseFloat(opts.nodewidth) : (this.settings.nodeMaxWidth || DEFAULTS.nodeMaxWidth);
     const blockW = opts.blockwidth ? parseFloat(opts.blockwidth) : (this.settings.blockMaxWidth || DEFAULTS.blockMaxWidth);
@@ -843,15 +1051,16 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     container.style.setProperty("--mm-node-max-width", `${nodeW}em`);
     container.style.setProperty("--mm-block-max-width", `${blockW}em`);
 
-    const alignVal = this.resolveOpt(container, opts, "align", "--mm-text-align", ALIGNS, "align");
+    const alignVal = this.resolveOpt(container, opts, "align", "--mm-text-align", t.aligns, "align");
     container.style.setProperty("--mm-text-align", alignVal);
   }
 
   // خروجی: نمودار را (با استایل‌های محاسبه‌شده) داخل یک SVG می‌گذارد و در صورت نیاز به PNG/JPG تبدیل می‌کند
   async exportDiagram(el, container, fmt, sourcePath) {
+    const t = this.t();
     try {
       const W = el.offsetWidth, H = el.offsetHeight;
-      if (!W || !H) { new Notice("نمودار هنوز آماده نیست."); return; }
+      if (!W || !H) { new Notice(t.tools.exportNotReady); return; }
       const pad = 16;
 
       const inline = (src, dst) => {
@@ -921,18 +1130,19 @@ module.exports = class RtlMindmapPlugin extends Plugin {
         path = (folder ? folder + "/" : "") + name;
       }
       await this.app.vault.createBinary(path, data);
-      new Notice("خروجی ذخیره شد: " + path);
+      new Notice(t.tools.exportSaved + path);
     } catch (e) {
       console.error("RTL Mindmap export failed", e);
-      new Notice("ساخت خروجی ناموفق بود" + (fmt !== "svg" ? "؛ خروجی SVG را امتحان کنید." : "."));
+      new Notice(t.tools.exportFailed + (fmt !== "svg" ? t.tools.exportTrySvg : "."));
     }
   }
 
   render(source, el, ctx) {
+    const t = this.t();
     const { opts, roots } = parse(source, this.markers());
     const container = el.createDiv({ cls: "mm-container" });
     if (!roots.length) {
-      container.createDiv({ cls: "mm-empty", text: "مایندمپ خالی است" });
+      container.createDiv({ cls: "mm-empty", text: t.tools.emptyMindmap });
       return;
     }
     const scroll = container.createDiv({ cls: "mm-scroll" });
@@ -949,15 +1159,16 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     let raf = 0;
 
     const apply = () => {
+      const curT = this.t();
       this.applySizingStyles(container, opts);
-      container.dataset.shape = this.resolveOpt(container, opts, "shape", "--mm-shape", SHAPES, "shape");
-      container.dataset.color = this.resolveOpt(container, opts, "color", "--mm-color-mode", COLOR_MODES, "colorMode");
-      container.dataset.line = this.resolveOpt(container, opts, "line", "--mm-line-style", LINES, "line");
-      container.dataset.bracket = this.resolveOpt(container, opts, "bracket", "--mm-bracket-style", BRACKETS, "bracket");
-      const d = DIRS[opts.dir] ? opts.dir : this.settings.dir;
+      container.dataset.shape = this.resolveOpt(container, opts, "shape", "--mm-shape", curT.shapes, "shape");
+      container.dataset.color = this.resolveOpt(container, opts, "color", "--mm-color-mode", curT.colorModes, "colorMode");
+      container.dataset.line = this.resolveOpt(container, opts, "line", "--mm-line-style", curT.lines, "line");
+      container.dataset.bracket = this.resolveOpt(container, opts, "bracket", "--mm-bracket-style", curT.brackets, "bracket");
+      const d = curT.dirs[opts.dir] ? opts.dir : this.settings.dir;
       container.dataset.orient = d === "ttb" || d === "btt" ? d : "h";
       container.setAttr("dir", d === "ltr" ? "ltr" : "rtl");
-      const at = this.resolveOpt(container, opts, "arrow", "--mm-arrow-style", ARROWS, "arrow");
+      const at = this.resolveOpt(container, opts, "arrow", "--mm-arrow-style", curT.arrows, "arrow");
       for (const a of arrows) if (a.dataset.type !== at) renderArrow(a, at);
     };
     const inst = { refresh: () => { apply(); schedule(); } };
@@ -1165,10 +1376,11 @@ module.exports = class RtlMindmapPlugin extends Plugin {
   }
 
   renderBracket(source, el, ctx) {
+    const t = this.t();
     const { opts, groups } = parseBracket(source, this.markers());
     const container = el.createDiv({ cls: "mm-container mm-bracket-container" });
     if (!groups.length) {
-      container.createDiv({ cls: "mm-empty", text: "بلاک خالی است" });
+      container.createDiv({ cls: "mm-empty", text: t.tools.emptyBracket });
       return;
     }
     const scroll = container.createDiv({ cls: "mm-scroll" });
@@ -1178,12 +1390,13 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     let raf = 0;
 
     const apply = () => {
+      const curT = this.t();
       this.applySizingStyles(container, opts);
-      container.dataset.shape = this.resolveOpt(container, opts, "shape", "--mm-shape", SHAPES, "shape");
-      container.dataset.bracket = this.resolveOpt(container, opts, "bracket", "--mm-bracket-style", BRACKETS, "bracket");
-      const d = DIRS[opts.dir] ? opts.dir : this.settings.dir;
+      container.dataset.shape = this.resolveOpt(container, opts, "shape", "--mm-shape", curT.shapes, "shape");
+      container.dataset.bracket = this.resolveOpt(container, opts, "bracket", "--mm-bracket-style", curT.brackets, "bracket");
+      const d = curT.dirs[opts.dir] ? opts.dir : this.settings.dir;
       container.setAttr("dir", d === "ltr" ? "ltr" : "rtl");
-      const at = this.resolveOpt(container, opts, "arrow", "--mm-arrow-style", ARROWS, "arrow");
+      const at = this.resolveOpt(container, opts, "arrow", "--mm-arrow-style", curT.arrows, "arrow");
       for (const a of arrows) if (a.dataset.type !== at) renderArrow(a, at);
     };
     const wOf = (e) => Math.ceil(e.getBoundingClientRect().width);
@@ -1286,7 +1499,21 @@ class MindmapSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
     const p = this.plugin;
+    const t = p.t();
     const save = async () => { await p.saveData(p.settings); p.refreshAll(); };
+
+    // انتخاب زبان
+    new Setting(containerEl)
+      .setName(t.settings.languageName)
+      .setDesc(t.settings.languageDesc)
+      .addDropdown((d) => {
+        Object.entries(LANGUAGES).forEach(([k, v]) => d.addOption(k, v));
+        d.setValue(p.settings.language || "fa").onChange(async (v) => {
+          p.settings.language = v;
+          await save();
+          this.display(); // رفرش فوری صفحه تنظیمات برای تغییر زبان
+        });
+      });
 
     const dd = (name, desc, key, map, extra) => {
       const s = new Setting(containerEl).setName(name).setDesc(desc);
@@ -1301,11 +1528,11 @@ class MindmapSettingTab extends PluginSettingTab {
       });
     };
 
-    dd("شکل گره‌ها", "در بلاک: @shape=pill | در CSS: --mm-shape: pill", "shape", SHAPES);
-    dd("نوع خط‌ها", "در بلاک: @line=elbow | در CSS: --mm-line-style: elbow", "line", LINES);
-    dd("رنگ‌بندی", "در بلاک: @color=level | در CSS: --mm-color-mode: level", "colorMode", COLOR_MODES);
-    dd("نوع آکولاد / کروشه", "در بلاک: @bracket=square | در CSS: --mm-bracket-style: square", "bracket", BRACKETS);
-    dd("نوع فلش عنوان", "در بلاک: @arrow=curve | در CSS: --mm-arrow-style: curve", "arrow", ARROWS, {
+    dd(t.settings.shapeName, t.settings.shapeDesc, "shape", t.shapes);
+    dd(t.settings.lineName, t.settings.lineDesc, "line", t.lines);
+    dd(t.settings.colorName, t.settings.colorDesc, "colorMode", t.colorModes);
+    dd(t.settings.bracketName, t.settings.bracketDesc, "bracket", t.brackets);
+    dd(t.settings.arrowName, t.settings.arrowDesc, "arrow", t.arrows, {
       create: (s) => {
         const sp = s.controlEl.createSpan({ cls: "mm-arrow" });
         sp.style.color = "var(--interactive-accent)";
@@ -1315,11 +1542,11 @@ class MindmapSettingTab extends PluginSettingTab {
       },
       update: (sp, v) => renderArrow(sp, v),
     });
-    dd("تراز متن داخل گره‌ها", "در بلاک: @align=center | در CSS: --mm-text-align: center", "align", ALIGNS);
+    dd(t.settings.alignName, t.settings.alignDesc, "align", t.aligns);
 
     new Setting(containerEl)
-      .setName("حداکثر عرض عنوان اصلی (ریشه) مایندمپ")
-      .setDesc("بر حسب em — در CSS: --mm-root-max-width")
+      .setName(t.settings.rootWidthName)
+      .setDesc(t.settings.rootWidthDesc)
       .addSlider((slider) =>
         slider
           .setLimits(10, 60, 1)
@@ -1332,8 +1559,8 @@ class MindmapSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("حداکثر عرض سایر گره‌های مایندمپ")
-      .setDesc("بر حسب em — در CSS: --mm-node-max-width")
+      .setName(t.settings.nodeWidthName)
+      .setDesc(t.settings.nodeWidthDesc)
       .addSlider((slider) =>
         slider
           .setLimits(14, 80, 1)
@@ -1346,8 +1573,8 @@ class MindmapSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("حداکثر عرض خطوط در بلاک کروشه")
-      .setDesc("بر حسب em — در CSS: --mm-block-max-width")
+      .setName(t.settings.blockWidthName)
+      .setDesc(t.settings.blockWidthDesc)
       .addSlider((slider) =>
         slider
           .setLimits(14, 80, 1)
@@ -1360,20 +1587,20 @@ class MindmapSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("خط‌چین راهنما")
-      .setDesc("اتصال آیتم‌ها به آکولاد با خط‌چین کمرنگ (در مایندمپ و کروشه). در بلاک: @leader=off")
-      .addToggle((t) => t.setValue(p.settings.bracketLeaders).onChange(async (v) => { p.settings.bracketLeaders = v; await save(); }));
-    dd("جهت کلی نمودار", "راست‌به‌چپ، چپ‌به‌راست، بالا‌به‌پایین یا پایین‌به‌بالا. در بلاک: @dir=ttb (در بلاک کروشه، بالا/پایین مثل راست‌به‌چپ است)", "dir", DIRS);
+      .setName(t.settings.leadersName)
+      .setDesc(t.settings.leadersDesc)
+      .addToggle((tgl) => tgl.setValue(p.settings.bracketLeaders).onChange(async (v) => { p.settings.bracketLeaders = v; await save(); }));
+    dd(t.settings.dirName, t.settings.dirDesc, "dir", t.dirs);
 
     const txt = (name, desc, key, def) =>
-      new Setting(containerEl).setName(name).setDesc(desc).addText((t) =>
-        t.setValue(p.settings[key]).onChange(async (v) => { p.settings[key] = v.trim() || def; await save(); }));
-    txt("نشانه‌ی توضیح کمرنگ", "متن بین دو نشانه، کمرنگ زیر گره می‌آید.", "marker", "::");
-    txt("نشانه‌ی عنوان", "متن بین دو نشانه، با فلش جلوی گره می‌آید.", "titleMarker", "##");
-    txt("نشانه‌ی آکولاد گروهی", "آخر چند قسمی که در خروجی کنار هم‌اند (هم‌سطح یا غیرهم‌سطح) بگذارید؛ متن بعد از آن، نتیجه‌ی آکولاد است. بلاک‌های باز را یک‌بار ببندید و باز کنید.", "groupMarker", "@@");
+      new Setting(containerEl).setName(name).setDesc(desc).addText((inp) =>
+        inp.setValue(p.settings[key]).onChange(async (v) => { p.settings[key] = v.trim() || def; await save(); }));
+    txt(t.settings.markerNoteName, t.settings.markerNoteDesc, "marker", "::");
+    txt(t.settings.markerTitleName, t.settings.markerTitleDesc, "titleMarker", "##");
+    txt(t.settings.markerGroupName, t.settings.markerGroupDesc, "groupMarker", "@@");
     containerEl.createEl("p", {
       cls: "setting-item-description",
-      text: "اگر در CSS یکی از متغیرهای بالا را تعیین کنید، بر تنظیم سراسری اولویت دارد (اما @... داخل بلاک از همه بالاتر است).",
+      text: t.settings.cssHint,
     });
   }
 }
