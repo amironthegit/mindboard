@@ -184,7 +184,7 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
   --mm-gap-x: 3.5em; /* Level spacing */
   --mm-gap-y: 0.8em; /* Sibling spacing */
 }
-```
+````
 
 ---
 ---
@@ -297,6 +297,7 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 - `RTL Mindmap: Cycle color modes`
 - `RTL Mindmap: Toggle direction (RTL/LTR)`
 
+
 ---
 
 ## نمونه‌های کاربردی و الگوها
@@ -318,7 +319,7 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 		تست‌های خودکار
 		بررسی امنیتی
 ```
-````
+
 
 ### نمونه ۲: استدلال منطقی و استنتاج چندمرحله‌ای (`bracket`)
 
@@ -333,6 +334,33 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 	اثبات فرضیه اول
 		نتیجه‌گیری نهایی تحقیق##گزارش رسمی##
 ```
+
+### نمونه ۳: دیاگرام سازمانی بالا‌به‌پایین (`ttb`)
+
+```mindmap
+@dir=ttb
+@shape=pill
+@line=elbow
+مدیرعامل
+	معاونت فنی
+		تیم بک‌اند
+		تیم فرانت‌اند
+	معاونت مالی
+		حسابداری
+		منابع انسانی
+```
+
+### نمونه ۴: شکست دستی خطوط بدون تغییر ساختار درخت
+
+اگر تمایل دارید متنی طولانی بدون چند قسمتی شدن، در دو خط مجزا قرار بگیرد، کافی است از تگ `<br>` استفاده کنید:
+
+```mindmap
+مفهوم بنیادین
+	تعریف اول که طولانی است<br>و در دو خط خوانده می‌شود
+	تعریف دوم
+```
+
+
 ````
 
 ---
