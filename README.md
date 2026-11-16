@@ -1,6 +1,6 @@
 # MindBoard (RTL Mindmap & Bracket Diagram for Obsidian)
 
-[English](#english) | [[#فارسی (Persian)|Persian]]
+[English](#english) | [فارسی (Persian)](#persian)
 ## ⚡ Quick Start
 
 **Copy the block below, paste it into a new note, switch to Reading view. Done.**
