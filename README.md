@@ -8,12 +8,12 @@
 ```mindmap
 @dir=ltr
 My Idea
-	First branch
-	Second branch
+ First branch
+ Second branch
 ```
 
 **How nesting works:**
-- A line with **no indent** = parent. **One `Tab`** (or 2–4 spaces) = child. **Two `Tab`s** = grandchild.
+- A line with **no indent** = parent. **One `Tab`** (or one spaces) = child. **Two `Tab`s** = grandchild.
 - No `-`, `*`, or `1.` list markers. Just plain lines + `Tab`.
 
 Same for `bracket`: just replace `mindmap` with `bracket`.
@@ -199,17 +199,6 @@ Executive Board
 		Human Resources
 ```
 
-### 4. Manual Line Breaks Without Changing Tree Structure
-
-If you want a long text to stay as one node but appear on two lines, use the `<br>` tag:
-
-```mindmap
-@dir=ltr
-Core Concept
-	First long definition<br>read on two lines
-	Second definition
-```
-
 ---
 
 <a id="en-css"></a>
@@ -249,7 +238,7 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 ```
 
 **قانون تورفتگی:**
-- خط بدون تورفتگی = والد. **یک `Tab`** (یا ۲ تا ۴ فاصله) = فرزند. **دو `Tab`** = نوه.
+- خط بدون تورفتگی = والد. **یک `Tab`** (یا یک فاصله) = فرزند. **دو `Tab`** = نوه.
 - بدون نشانه‌های لیست `-` و `*` و `۱.`. فقط متن ساده + `Tab`.
 
 برای `bracket` هم همین است: فقط `mindmap` را با `bracket` عوض کنید.
@@ -428,14 +417,6 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 		منابع انسانی
 ```
 
-### نمونه ۴: شکست دستی خطوط بدون تغییر ساختار درخت
-
-اگر تمایل دارید متنی طولانی بدون چند قسمتی شدن، در دو خط مجزا قرار بگیرد، کافی است از تگ `<br>` استفاده کنید:
-
-```mindmap
-مفهوم بنیادین
-	تعریف اول که طولانی است<br>و در دو خط خوانده می‌شود
-	تعریف دوم
 ```
 
 ---
