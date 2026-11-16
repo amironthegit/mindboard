@@ -101,7 +101,7 @@ const I18N = {
       leadersName: "خط‌چین راهنما",
       leadersDesc: "اتصال آیتم‌ها به آکولاد با خط‌چین کمرنگ (در مایندمپ و کروشه). در بلاک: @leader=off",
       dirName: "جهت کلی نمودار",
-      dirDesc: "راست‌به‌چپ، چپ‌به‌راست، بالا‌به‌پایین یا پایین‌به‌بالا. در بلاک: @dir=ttb (در بلاک کروشه، بالا/پایین مثل راست‌به‌چپ است)",
+      dirDesc: "راست‌به‌چپ، چپ‌به‌راست، بالا‌به‌پایین یا پایین‌به‌بالا. در بلاک: @dir=ttb",
       markerNoteName: "نشانه‌ی توضیح کمرنگ",
       markerNoteDesc: "متن بین دو نشانه، کمرنگ زیر گره می‌آید.",
       markerTitleName: "نشانه‌ی عنوان",
@@ -382,7 +382,74 @@ function bracePath(w, h, style) {
          `Q${xm} ${y} ${xm} ${y + r}L${xm} ${h - 1 - r}Q${xm} ${h - 1} ${x0} ${h - 1}`;
 }
 
-function layoutTree(root, gut, gapS, gapB) {
+function layoutTree(root, gut, gapS, gapB, orient = "h") {
+  // چیدمان عمودی کروشه (ttb / btt): ستون‌ها ردیف می‌شوند و آکولاد افقی کشیده می‌شود.
+  if (orient === "ttb" || orient === "btt") {
+    const all = [];
+    const col = new Map();
+    const calc = (n) => {
+      all.push(n);
+      if (!n.children.length) { col.set(n, 0); return 0; }
+      const m = Math.max(...n.children.map(calc));
+      col.set(n, m + 1);
+      return m + 1;
+    };
+    const D = calc(root);
+    const colOf = (n) => col.get(n);
+    const colH = Array(D + 1).fill(0);
+    for (const n of all) { const c = colOf(n); colH[c] = Math.max(colH[c], n.h); }
+    const y = Array(D + 1).fill(0);
+    if (orient === "ttb") {
+      for (let i = 0; i < D; i++) y[i + 1] = y[i] + colH[i] + gut;
+    } else {
+      for (let i = D; i > 0; i--) y[i - 1] = y[i] + colH[i] + gut;
+    }
+    const shift = (n, dx) => {
+      n.x += dx;
+      if (n.span) n.span = [n.span[0] + dx, n.span[1] + dx];
+      n.children.forEach((c) => shift(c, dx));
+    };
+    const place = (n) => {
+      if (!n.children.length) { n.x = 0; return [0, n.w]; }
+      let end = null, prevLeaf = false, lo = Infinity, hi = -Infinity;
+      for (const c of n.children) {
+        let e = place(c);
+        const leaf = !c.children.length;
+        const start = end === null ? 0 : end + (prevLeaf && leaf ? gapS : gapB);
+        const dx = start - e[0];
+        shift(c, dx);
+        e = [e[0] + dx, e[1] + dx];
+        end = e[1]; prevLeaf = leaf;
+        lo = Math.min(lo, e[0]); hi = Math.max(hi, e[1]);
+      }
+      const x0 = Math.min(...n.children.map((c) => c.x));
+      const x1 = Math.max(...n.children.map((c) => c.x + c.w));
+      n.span = [x0, x1];
+      n.x = (x0 + x1) / 2 - n.w / 2;
+      return [Math.min(lo, n.x), Math.max(hi, n.x + n.w)];
+    };
+    place(root);
+    const minX = Math.min(...all.map((n) => n.x));
+    const maxX = Math.max(...all.map((n) => n.x + n.w));
+    const H = (orient === "ttb" ? y[D] + colH[D] : y[0] + colH[0]);
+    const braces = [], leaders = [];
+    for (const n of all) {
+      n.x -= minX;
+      n.y = y[colOf(n)];
+      n.fw = n.w;
+    }
+    for (const n of all) {
+      if (!n.children.length) continue;
+      const cc = Math.max(...n.children.map(colOf));
+      const gapTop = orient === "ttb" ? y[cc] + colH[cc] : y[cc + 1] + colH[cc + 1];
+      braces.push({ x0: n.span[0] - minX, x1: n.span[1] - minX, y: gapTop });
+      for (const k of n.children) {
+        if (orient === "ttb") leaders.push({ x: k.x + k.w / 2, y1: k.y + k.h, y2: gapTop });
+        else leaders.push({ x: k.x + k.w / 2, y1: k.y, y2: gapTop });
+      }
+    }
+    return { braces, leaders, W: maxX - minX, H };
+  }
   const all = [];
   const col = new Map();
   const calc = (n) => {
@@ -926,6 +993,16 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     const t = this.t();
     container.dataset.notes = "on";
     const bar = container.createDiv({ cls: "mm-tools" });
+    // ترتیب دکمه‌ها تابع زبان رابط کاربری است، نه جهت نمودار: با تغییر جهت نمودار عوض نمی‌شود.
+    bar.style.direction = this.settings.language === "en" ? "ltr" : "rtl";
+    // فقط یک منو در هر لحظه باز بماند: پیش از باز شدن منوی جدید، منوی قبلی بسته می‌شود.
+    const closeOpenMenu = () => {
+      if (this._openBlockMenu) {
+        try { this._openBlockMenu.hide(); } catch (e) { /* منوی قبلی دیگر باز نیست */ }
+        this._openBlockMenu = null;
+      }
+      document.querySelectorAll(".mm-slider-popover").forEach((p) => p.remove());
+    };
     const stop = (e) => e.stopPropagation();
     const mkBtn = (icon, label, onClick, cls = "") => {
       const b = bar.createEl("button", { cls: "mm-tool clickable-icon " + cls, attr: { "aria-label": label, type: "button" } });
@@ -935,10 +1012,12 @@ module.exports = class RtlMindmapPlugin extends Plugin {
       return b;
     };
     mkBtn("download", t.tools.exportBtn, (e) => {
+      closeOpenMenu();
       const menu = new Menu();
       for (const [fmt, title] of [["svg", t.tools.exportSvg], ["png", t.tools.exportPng], ["jpg", t.tools.exportJpg]]) {
         menu.addItem((it) => it.setTitle(title).setIcon("image").onClick(() => this.exportDiagram(getEl(), container, fmt, ctx.sourcePath)));
       }
+      this._openBlockMenu = menu;
       menu.showAtMouseEvent(e);
     });
     const nb = mkBtn("message-square", t.tools.toggleNotes, (e, b) => {
@@ -953,6 +1032,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
 
     const addOptMenu = (icon, title, optKey, map, defKey, isFirst = false) => {
       const btn = mkBtn(icon, title, (e) => {
+        closeOpenMenu();
         const activeVal = opts[optKey];
         const hasCustom = activeVal !== undefined;
         const currentDefVal = this.settings[defKey] || DEFAULTS[defKey];
@@ -972,6 +1052,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
               .onClick(() => this.updateBlockOptions(ctx, { [optKey]: k }))
           );
         }
+        this._openBlockMenu = menu;
         menu.showAtMouseEvent(e);
       }, (opts[optKey] !== undefined ? "is-custom " : "") + (isFirst ? "mm-opt-start " : ""));
       return btn;
@@ -999,7 +1080,8 @@ module.exports = class RtlMindmapPlugin extends Plugin {
 
     if (!isBracket) {
       const hasAnyWidth = opts.rootwidth !== undefined || opts.nodewidth !== undefined;
-      mkBtn("maximize", t.tools.optWidthMindmap, (e, b) => {
+      mkBtn("stretch-horizontal", t.tools.optWidthMindmap, (e, b) => {
+        closeOpenMenu();
         const defRoot = this.settings.rootMaxWidth || DEFAULTS.rootMaxWidth;
         const defNode = this.settings.nodeMaxWidth || DEFAULTS.nodeMaxWidth;
         const curRoot = opts.rootwidth ? parseFloat(opts.rootwidth) : defRoot;
@@ -1033,6 +1115,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     } else {
       const hasBlockWidth = opts.blockwidth !== undefined;
       mkBtn("stretch-horizontal", t.tools.optWidthBracket, (e, b) => {
+        closeOpenMenu();
         const defBlock = this.settings.blockMaxWidth || DEFAULTS.blockMaxWidth;
         const curBlock = opts.blockwidth ? parseFloat(opts.blockwidth) : defBlock;
 
@@ -1404,6 +1487,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
       container.dataset.shape = this.resolveOpt(container, opts, "shape", "--mm-shape", curT.shapes, "shape");
       container.dataset.bracket = this.resolveOpt(container, opts, "bracket", "--mm-bracket-style", curT.brackets, "bracket");
       const d = curT.dirs[opts.dir] ? opts.dir : this.settings.dir;
+      container.dataset.orient = d === "ttb" || d === "btt" ? d : "h";
       container.setAttr("dir", d === "ltr" ? "ltr" : "rtl");
       const at = this.resolveOpt(container, opts, "arrow", "--mm-arrow-style", curT.arrows, "arrow");
       for (const a of arrows) if (a.dataset.type !== at) renderArrow(a, at);
@@ -1414,6 +1498,7 @@ module.exports = class RtlMindmapPlugin extends Plugin {
     const draw = () => {
       raf = 0;
       apply();
+      const isRTL = container.getAttribute("dir") === "rtl";
       list.style.transform = "";
       const fs = parseFloat(getComputedStyle(container).fontSize) || 16;
       const bw = Math.round(fs * 1.1), pad = Math.round(fs * 0.45);
@@ -1425,9 +1510,11 @@ module.exports = class RtlMindmapPlugin extends Plugin {
         for (const n of c.nodes) n.el.style.width = "";
         for (const n of c.nodes) { n.w = wOf(n.el); n.h = hOf(n.el); }
         if (!c.root.w) return;
-        const L = layoutTree(c.root, gut, gapS, gapB);
+        const L = layoutTree(c.root, gut, gapS, gapB, container.dataset.orient);
         for (const n of c.nodes) {
-          n.el.style.insetInlineStart = n.x + "px";
+          // جای گره‌ها صریح و فیزیکی حساب می‌شود تا وارونه‌سازی در چپ‌به‌راست و راست‌به‌چپ حتمی باشد.
+          n.el.style.insetInlineStart = "";
+          n.el.style.left = (isRTL ? L.W - n.x - n.fw : n.x) + "px";
           n.el.style.top = n.y + "px";
           n.el.style.width = n.fw + "px";
         }
@@ -1436,20 +1523,44 @@ module.exports = class RtlMindmapPlugin extends Plugin {
         c.svg.setAttribute("width", L.W);
         c.svg.setAttribute("height", L.H);
         c.svg.setAttribute("viewBox", `0 0 ${L.W} ${L.H}`);
+        // وارونه‌سازی آکولاد و خط راهنما در همین تابع و به‌صورت صریح انجام می‌شود، پس چرخش CSS مربوط به راست‌به‌چپ خنثی می‌شود تا دوبار وارونه نشود.
+        c.svg.style.transform = "none";
         while (c.svg.firstChild) c.svg.removeChild(c.svg.firstChild);
         for (const b of L.braces) {
           const p = document.createElementNS(NS, "path");
           p.setAttribute("class", "mm-bpath");
-          p.setAttribute("d", bracePath(bw, b.y1 - b.y0, style));
-          p.setAttribute("transform", `translate(${b.x + pad} ${b.y0})`);
+          if (container.dataset.orient === "ttb" || container.dataset.orient === "btt") {
+            p.setAttribute("d", bracePath(bw, b.x1 - b.x0, style));
+            if (isRTL) {
+              if (container.dataset.orient === "ttb") p.setAttribute("transform", `matrix(0 1 -1 0 ${L.W - b.x0} ${b.y + pad})`);
+              else p.setAttribute("transform", `matrix(0 -1 -1 0 ${L.W - b.x0} ${b.y + pad + bw})`);
+            } else if (container.dataset.orient === "ttb") p.setAttribute("transform", `matrix(0 1 1 0 ${b.x0} ${b.y + pad})`);
+            else p.setAttribute("transform", `matrix(0 -1 1 0 ${b.x0} ${b.y + pad + bw})`);
+          } else if (isRTL) {
+            p.setAttribute("d", bracePath(bw, b.y1 - b.y0, style));
+            p.setAttribute("transform", `translate(${L.W - b.x - pad} ${b.y0}) scale(-1 1)`);
+          } else {
+            p.setAttribute("d", bracePath(bw, b.y1 - b.y0, style));
+            p.setAttribute("transform", `translate(${b.x + pad} ${b.y0})`);
+          }
           c.svg.appendChild(p);
         }
         for (const l of showLeaders ? L.leaders : []) {
-          const x2 = l.x2 + pad;
-          if (x2 - l.x1 < fs * 0.6) continue;
+          if (container.dataset.orient === "ttb" || container.dataset.orient === "btt") {
+            const y2 = container.dataset.orient === "ttb" ? l.y2 + pad : l.y2 + pad + bw;
+            if (Math.abs(y2 - l.y1) < fs * 0.6) continue;
+            const p = document.createElementNS(NS, "path");
+            p.setAttribute("class", "mm-bleader");
+            p.setAttribute("d", `M${isRTL ? L.W - l.x : l.x} ${l.y1} V${y2}`);
+            c.svg.appendChild(p);
+            continue;
+          }
+          const x1 = isRTL ? L.W - l.x1 : l.x1;
+          const x2 = isRTL ? L.W - (l.x2 + pad) : l.x2 + pad;
+          if (Math.abs(x2 - x1) < fs * 0.6) continue;
           const p = document.createElementNS(NS, "path");
           p.setAttribute("class", "mm-bleader");
-          p.setAttribute("d", `M${l.x1} ${l.y} H${x2}`);
+          p.setAttribute("d", `M${x1} ${l.y} H${x2}`);
           c.svg.appendChild(p);
         }
       }

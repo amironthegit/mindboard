@@ -1,10 +1,28 @@
 # MindBoard (RTL Mindmap & Bracket Diagram for Obsidian)
 
-[English](#english) | [فارسی (Persian)](#فارسی)
+[English](#english) | [[#فارسی (Persian)|Persian]]
+## ⚡ Quick Start
+
+**Copy the block below, paste it into a new note, switch to Reading view. Done.**
+
+```mindmap
+@dir=ltr
+My Idea
+	First branch
+	Second branch
+```
+
+**How nesting works:**
+- A line with **no indent** = parent. **One `Tab`** (or 2–4 spaces) = child. **Two `Tab`s** = grandchild.
+- No `-`, `*`, or `1.` list markers. Just plain lines + `Tab`.
+
+Same for `bracket`: just replace `mindmap` with `bracket`.
+
+**If you see code instead of a diagram:** you are in Edit/Source mode. Switch to **Reading view**.
 
 ---
 
-<a name="english"></a>
+<a id="english"></a>
 # English
 
 **MindBoard** is a lightweight, responsive, and flexible Obsidian plugin designed for drawing mindmaps and reverse bracket/logic trees with native support for Right-to-Left (Persian/Arabic) and Left-to-Right workflows.
@@ -12,16 +30,18 @@
 Rendered purely with SVG paths without heavy third-party dependencies, MindBoard provides real-time visual customization, interactive settings, and vector exports directly inside your vault.
 
 ## Table of Contents
-1. [Key Features](#features)
-2. [Installation](#installation)
-3. [Syntax & Markup](#syntax--markup)
-4. [Inline Directives](#inline-directives)
-5. [On-Chart Interactive Toolbar](#on-chart-interactive-toolbar)
-6. [Keyboard Shortcuts & Commands](#keyboard-shortcuts--commands)
-7. [Examples](#examples)
-8. [Custom CSS Styling](#custom-css-styling)
+1. [Key Features](#en-features)
+2. [Installation](#en-installation)
+3. [Syntax & Markup](#en-syntax)
+4. [Inline Directives](#en-directives)
+5. [On-Chart Interactive Toolbar](#en-toolbar)
+6. [Keyboard Shortcuts & Commands](#en-shortcuts)
+7. [Examples](#en-examples)
+8. [Custom CSS Styling](#en-css)
 
 ---
+
+<a id="en-features"></a>
 
 ## Features
 
@@ -35,6 +55,8 @@ Rendered purely with SVG paths without heavy third-party dependencies, MindBoard
 - **High-Resolution Vector Export:** One-click downloads directly to your vault in vector `SVG`, `PNG`, or `JPG` formats.
 
 ---
+
+<a id="en-installation"></a>
 
 ## Installation
 
@@ -55,6 +77,8 @@ Rendered purely with SVG paths without heavy third-party dependencies, MindBoard
 
 ---
 
+<a id="en-syntax"></a>
+
 ## Syntax & Markup
 
 Diagrams are declared inside markdown code blocks using either `mindmap` or `bracket` as the language tag.
@@ -69,6 +93,8 @@ Diagrams are declared inside markdown code blocks using either `mindmap` or `bra
 - Indentation levels define syllogisms: deeper indentation represents the conclusion or logical deduction stemming from the shallower preceding lines.
 
 ---
+
+<a id="en-directives"></a>
 
 ## Inline Directives
 
@@ -90,6 +116,8 @@ Override global plugin defaults per diagram by placing `@` directives at the beg
 
 ---
 
+<a id="en-toolbar"></a>
+
 ## On-Chart Interactive Toolbar
 
 Hovering over the top corner of any rendered diagram reveals a quick-access toolbar:
@@ -100,6 +128,8 @@ Hovering over the top corner of any rendered diagram reveals a quick-access tool
 4. **Live Size Adjustment:** Use interactive sliders to alter node width and watch the SVG resize in real-time.
 
 ---
+
+<a id="en-shortcuts"></a>
 
 ## Keyboard Shortcuts & Commands
 
@@ -115,11 +145,14 @@ From the Obsidian Command Palette (`Ctrl/Cmd + P`):
 
 ---
 
+<a id="en-examples"></a>
+
 ## Examples
 
 ### 1. Hierarchical Mindmap with Notes, Arrows, and Braces
 
 ```mindmap
+@dir=ltr
 @shape=rounded
 @line=curve
 @color=branch
@@ -138,6 +171,7 @@ Project Launch
 ### 2. Deductive Bracket Logic Tree
 
 ```bracket
+@dir=ltr
 @bracket=curly
 @shape=pill
 @align=center
@@ -164,9 +198,21 @@ Executive Board
 		Finance
 		Human Resources
 ```
-````
+
+### 4. Manual Line Breaks Without Changing Tree Structure
+
+If you want a long text to stay as one node but appear on two lines, use the `<br>` tag:
+
+```mindmap
+@dir=ltr
+Core Concept
+	First long definition<br>read on two lines
+	Second definition
+```
 
 ---
+
+<a id="en-css"></a>
 
 ## Custom CSS Styling
 
@@ -184,29 +230,49 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
   --mm-gap-x: 3.5em; /* Level spacing */
   --mm-gap-y: 0.8em; /* Sibling spacing */
 }
-````
+```
 
 ---
 ---
 
-<a name="فارسی"></a>
+<a id="persian"></a>
 # فارسی (Persian)
+
+## ⚡ شروع سریع
+
+**بلاک زیر را کپی کنید، در یک یادداشت جدید پیست کنید و به Reading view بروید. تمام شد.**
+
+```mindmap
+ایده من
+	شاخه اول
+	شاخه دوم
+```
+
+**قانون تورفتگی:**
+- خط بدون تورفتگی = والد. **یک `Tab`** (یا ۲ تا ۴ فاصله) = فرزند. **دو `Tab`** = نوه.
+- بدون نشانه‌های لیست `-` و `*` و `۱.`. فقط متن ساده + `Tab`.
+
+برای `bracket` هم همین است: فقط `mindmap` را با `bracket` عوض کنید.
+
+**اگر به‌جای نمودار کد می‌بینید:** در حالت ویرایش هستید. به **Reading view** بروید.
 
 افزونه‌ی **MindBoard** ابزاری سبک، سریع و منعطف برای ترسیم نقشه‌های ذهنی (Mindmap) و درخت‌های معکوس استدلالی/کروشه‌ای (Bracket / Logic Trees) با پشتیبانی بومی از زبان‌های راست‌به‌چپ (فارسی و عربی) در محیط ابسیدین است.
 
 این افزونه بدون وابستگی به کتابخانه‌های سنگین خارجی، دیاگرام‌ها را به‌صورت برداری SVG رسم کرده و امکان تنظیمات لحظه‌ای، شخصی‌سازی بصری و خروجی باکیفیت تصویری را در اختیارتان می‌گذارد.
 
 ## فهرست مطالب
-1. [ویژگی‌های کلیدی](#ویژگیهای-کلیدی)
-2. [نحوه‌ی نصب و راه‌اندازی](#نحوهی-نصب-و-راهاندازی)
-3. [ساختار و نشانه‌گذاری‌ها (Syntax)](#ساختار-و-نشانهگذاریها-syntax)
-4. [تنظیمات درون‌بلاک (Inline Directives)](#تنظیمات-درونبلاک-inline-directives)
-5. [نوار ابزار روی هر نمودار](#نوار-ابزار-روی-هر-نمودار)
-6. [کلیدهای میانبر و دستورات](#کلیدهای-میانبر-و-دستورات)
-7. [نمونه‌های کاربردی و الگوها](#نمونههای-کاربردی-و-الگوها)
-8. [شخصی‌سازی پیشرفته با CSS](#شخصیسازی-پیشرفته-با-css)
+1. [ویژگی‌های کلیدی](#fa-features)
+2. [نحوه‌ی نصب و راه‌اندازی](#fa-installation)
+3. [ساختار و نشانه‌گذاری‌ها (Syntax)](#fa-syntax)
+4. [تنظیمات درون‌بلاک (Inline Directives)](#fa-directives)
+5. [نوار ابزار روی هر نمودار](#fa-toolbar)
+6. [کلیدهای میانبر و دستورات](#fa-shortcuts)
+7. [نمونه‌های کاربردی و الگوها](#fa-examples)
+8. [شخصی‌سازی پیشرفته با CSS](#fa-css)
 
 ---
+
+<a id="fa-features"></a>
 
 ## ویژگی‌های کلیدی
 
@@ -220,6 +286,8 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 - **ابزار خروجی پرقدرت:** دانلود مستقیم نمودار با کیفیت برداری `SVG` یا تصاویر `PNG` و `JPG` در والت.
 
 ---
+
+<a id="fa-installation"></a>
 
 ## نحوه‌ی نصب و راه‌اندازی
 
@@ -240,6 +308,8 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 
 ---
 
+<a id="fa-syntax"></a>
+
 ## ساختار و نشانه‌گذاری‌ها (Syntax)
 
 دیاگرام‌ها با استفاده از بلاک کد مارک‌داون با زبان `mindmap` یا `bracket` ساخته می‌شوند.
@@ -254,6 +324,8 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 - هرچه تورفتگی (سطح تب) بیشتر باشد، آن عبارت «نتیجه» یا گام بعدیِ ردیف‌های با تورفتگی کمتر قبلی است.
 
 ---
+
+<a id="fa-directives"></a>
 
 ## تنظیمات درون‌بلاک (Inline Directives)
 
@@ -275,6 +347,8 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 
 ---
 
+<a id="fa-toolbar"></a>
+
 ## نوار ابزار روی هر نمودار
 
 با بردن نشانگر ماوس روی گوشه بالایی هر نمودار، نوار ابزار ظاهر می‌شود:
@@ -284,6 +358,8 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 4. **اسلایدر زنده تنظیم عرض:** تغییر حداکثر عرض عنوان اصلی و گره‌ها و مشاهده لحظه‌ای تغییرات در SVG.
 
 ---
+
+<a id="fa-shortcuts"></a>
 
 ## کلیدهای میانبر و دستورات
 
@@ -299,6 +375,8 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 
 
 ---
+
+<a id="fa-examples"></a>
 
 ## نمونه‌های کاربردی و الگوها
 
@@ -360,10 +438,9 @@ Add a custom CSS snippet under **Settings** > **Appearance** > **CSS snippets** 
 	تعریف دوم
 ```
 
-
-````
-
 ---
+
+<a id="fa-css"></a>
 
 ## شخصی‌سازی پیشرفته با CSS
 
